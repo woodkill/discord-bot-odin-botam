@@ -12,11 +12,11 @@ class Guild(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         import btdb
-        self.db :btdb.BtDb = bot.db
+        self.db: btdb.BtDb = bot.db
         self.logger = logging.getLogger('cog')
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         self.logger.info(f"Guild Cog loaded.")
 
     # / command를 등록하는 코드같음
@@ -30,7 +30,13 @@ class Guild(commands.Cog):
     #     await interaction.response.send_message('Answered')
 
     @commands.command(name=u"길드등록")
-    async def register_guild(self, ctx: commands.Context, *args):
+    async def register_guild(self, ctx: commands.Context, *args) -> None:
+        '''
+        "길드등록" 명령어를 처리한다.
+        :param ctx: context
+        :param args: 오딘서버명, 길드명
+        :return: 없음
+        '''
         self.logger.debug(f"길드등록 {args}")
         if len(args) != 2:
             await ctx.reply(f"사용법 : .길드등록 ***오딘서버명 길드명***")
@@ -47,7 +53,12 @@ class Guild(commands.Cog):
         await ctx.reply(f"길드등록 완료 : {odin_server_name}/{odin_guild_name}")
 
     @commands.command(name=u"길드확인")
-    async def check_guild(self, ctx: commands.Context):
+    async def check_guild(self, ctx: commands.Context) -> None:
+        '''
+        "길드확인" 명령어를 처리한다.
+        :param ctx: context
+        :return: 없음
+        '''
         self.logger.debug(f"길드확인")
         success, odin_server_name, odin_guild_ame = self.db.get_odin_guild_info(ctx.guild.id)
         if success:
