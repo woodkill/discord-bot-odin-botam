@@ -25,7 +25,8 @@ class BtBot(commands.Bot):
             application_id=1074530999947493438
         )
         self.initial_extension = [
-            "Cogs.Guild"
+            "Cogs.Guild",
+            "Cogs.Boss"
         ]
         self.db = btdb.BtDb()
         self.logger.info('bot init complete')
