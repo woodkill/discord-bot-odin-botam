@@ -4,32 +4,7 @@ from firebase_admin import firestore
 from functools import cmp_to_key
 import logging
 from const_key import *
-
-
-# def boss_comparator(a, b):
-#     '''
-#     보스정렬용
-#     sorted() 함수의 key=cmp_to_key()의 인자로 넣는다.
-#     :param a:
-#     :param b:
-#     :return:
-#     '''
-#     if a[kCHAP_ORDER] > b[kCHAP_ORDER]: # 정렬기준대로 앞으로 가는 조건
-#         return 1
-#     elif a[kCHAP_ORDER] < b[kCHAP_ORDER]: # 정렬기준 반대로 뒤로 가는 조건
-#         return -1
-#     else: # 정렬기준에 해당되지 않는 조건
-#         if a[kBOSS_LEVEL] > b[kBOSS_LEVEL]:
-#             return 1
-#         elif a[kBOSS_LEVEL] < b[kBOSS_LEVEL]:
-#             return -1
-#         else:
-#             if a[kBOSS_ORDER] > b[kBOSS_ORDER]:
-#                 return 1
-#             elif a[kBOSS_ORDER] < b[kBOSS_ORDER]:
-#                 return -1
-#             else:
-#                 return 0
+from const_data import *
 
 class BtDb():
 
@@ -146,6 +121,20 @@ class BtDb():
                 return item
         return None
 
+    def get_daily_fixed_boss_alarm_dict(self) -> dict:
+        '''
+        보스정보 dict에서 고정타임 보스에 해당하는 정보를 찾아서 {시각:[보스명리스트], ...} 형식의 dict로 반환해 준다.
+        :return: {시각:[보스명리스트], ...}
+        '''
+        fixed_boss_dict = {k: v for k, v in self.bossDic.items() if v[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED}
+        alarm_dict = {}
+        for k, v in fixed_boss_dict.items():
+            times = v[kBOSS_FIXED_TIME]
+            for time in times:
+                if time not in alarm_dict:
+                    alarm_dict[time] = []
+                alarm_dict[time].append(v[kBOSS_NAME])
+        return alarm_dict
 
     #
     # def delete_boss_collection(self, discord_guild_id, col_ref, batch_size):

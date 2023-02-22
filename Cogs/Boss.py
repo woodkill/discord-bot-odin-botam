@@ -9,6 +9,7 @@ from const_key import *
 from const_data import *
 from common import *
 
+
 class Boss(commands.Cog):
 
     def __init__(self, bot: commands.Bot) -> None:
@@ -53,10 +54,11 @@ class Boss(commands.Cog):
         if len(args) != 1:
             await ctx.reply(f"사용법 : .{cBOSS_INFO} ***보스명***")
             return
-        self.logger.debug(f"명령어 갯수 통과")
+        self.logger.debug(f"{cBOSS_INFO} 명령어 갯수 통과")
+        # 보스명에 해당하는 보스정보 가져오기
         odin_boss_name = args[0]
         boss_dic = self.db.get_boss_item_by_name(odin_boss_name)
-
+        # 보스 타입에 따라 보스정보 표시 문자열을 만든다.
         boss_type = boss_dic[kBOSS_TYPE]
         boss_apperance = ""
         if boss_type == cBOSS_TYPE_INTERVAL:
@@ -102,10 +104,57 @@ class Boss(commands.Cog):
 
         await ctx.reply(msg)
 
-    @commands.command(name=cBOSS_REGISTER_ALIAS)
-    async def register_alias_boss(self, ctx: commands.Context, *args):
-        self.logger.info(f"{cBOSS_REGISTER_ALIAS} {args}")
-        await ctx.reply(f"{cBOSS_REGISTER_ALIAS} 등록 구현중...")
+    @commands.command(name=cBOTAM_WORLDBOSS_ONOFF)
+    async def onoff_world_boss_alarm(self, ctx: commands.Context, *args) -> None:
+        '''
+        월드보탐 온/오프 기능
+        :param ctx: Context
+        :param args: args[0] "켜기" 혹은 "끄기"
+        :return:
+        '''
+        logging.info(f"{cBOTAM_WORLDBOSS_ONOFF} {args}")
+        # 명령어 형식이 맞는지 검사
+        if len(args) != 1 or args[0].lower() not in {'on', 'off', u"켜기", u"끄기"}:
+            await ctx.reply(f"사용법 : .{cBOTAM_WORLDBOSS_ONOFF} on/off\n"
+                            f"사용법 : .{cBOTAM_WORLDBOSS_ONOFF} 켜기/끄기\n")
+            return
+        self.logger.debug(f"{cBOTAM_WORLDBOSS_ONOFF} : 명령어 갯수 통과")
+        if args[0].lower() in {"on", u"켜기"}:
+            pass
+        elif args[0].lower() in {"off", u"끄기"}:
+            pass
+        else:
+            await ctx.reply(f"사용법 : .{cBOTAM_WORLDBOSS_ONOFF} on/off\n"
+                            f"사용법 : .{cBOTAM_WORLDBOSS_ONOFF} 켜기/끄기\n")
+            return
+        alarm_dict = self.db.get_daily_fixed_boss_alarm_dict()
+        # self.logger.info(alarm_dict)
+        await ctx.reply(f"{alarm_dict} 이것을 처리할 것입니다....")
+
+
+
+
+    @commands.command(name=cBOSS_ADD_ALIAS)
+    async def register_alias_boss(self, ctx: commands.Context, *args) -> None:
+        '''
+        TODO : 이 봇을 여러개의 길드가 사용할 경우 추가한 보스별명이 다른 길드에는 영향이 가지 않도록 구현해야 한다. 다시 생각해 보도록...
+        :param ctx: Context
+        :param args:
+        :return:
+        '''
+        self.logger.info(f"{cBOSS_ADD_ALIAS} {args}")
+        # 명령어 형식이 맞는지 검사
+        if len(args) != 2:
+            await ctx.reply(f"사용법 : .{cBOSS_ADD_ALIAS} ***정식보스명 추가할보스별명***")
+            return
+        self.logger.debug(f"{cBOSS_ADD_ALIAS} 명령어 갯수 통과")
+        # 앞의 보스명은 보스명이나 별명에 있어야 하고 뒤의 보스별명은 기존에 없어야 한다.
+        str_exist_boss_name = args[0]
+        exist_boss_dic = self.db.get_boss_item_by_name(str_exist_boss_name)
+
+        str_new_boss_alias = args[1]
+
+        await ctx.reply(f"{cBOSS_ADD_ALIAS} 구현중...")
 
     # @commands.command(name=u"보스등록")
     # async def register_boss(self, ctx: commands.Context, *args) -> None:

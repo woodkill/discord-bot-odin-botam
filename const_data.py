@@ -17,5 +17,6 @@ cGUILD_REGISTER = u"길드등록"
 cGUILD_CONFIRM = u"길드확인"
 cBOSS_LIST = u"보스목록"
 cBOSS_INFO = u"보스정보"
-cBOSS_REGISTER_ALIAS = u"보스별명등록"
+cBOSS_ADD_ALIAS = u"보스별명추가"
+cBOTAM_WORLDBOSS_ONOFF = u"월드보탐"
 
