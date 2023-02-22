@@ -6,6 +6,31 @@ import logging
 from const_key import *
 
 
+# def boss_comparator(a, b):
+#     '''
+#     보스정렬용
+#     sorted() 함수의 key=cmp_to_key()의 인자로 넣는다.
+#     :param a:
+#     :param b:
+#     :return:
+#     '''
+#     if a[kCHAP_ORDER] > b[kCHAP_ORDER]: # 정렬기준대로 앞으로 가는 조건
+#         return 1
+#     elif a[kCHAP_ORDER] < b[kCHAP_ORDER]: # 정렬기준 반대로 뒤로 가는 조건
+#         return -1
+#     else: # 정렬기준에 해당되지 않는 조건
+#         if a[kBOSS_LEVEL] > b[kBOSS_LEVEL]:
+#             return 1
+#         elif a[kBOSS_LEVEL] < b[kBOSS_LEVEL]:
+#             return -1
+#         else:
+#             if a[kBOSS_ORDER] > b[kBOSS_ORDER]:
+#                 return 1
+#             elif a[kBOSS_ORDER] < b[kBOSS_ORDER]:
+#                 return -1
+#             else:
+#                 return 0
+
 class BtDb():
 
     def __init__(self):
@@ -16,21 +41,22 @@ class BtDb():
         # logger setting
         self.logger = logging.getLogger('db')
         # data storage
-        self.serverSet = {}
-        self.bossDic = {}
+        self.serverDic: dict = {}
+        self.bossDic: dict = {}
         # initialize
-        self.load_server_list()
+        self.load_server_dic()
         self.load_boss_dic()
+        self.logger.info(f"btdb init complete")
 
-    def load_server_list(self) -> bool:
+    def load_server_dic(self) -> bool:
         '''
         서버DB에서 오딘 서버목록을 쿼리하여 self.serverSet에 저장
         :return: 성공여부
         '''
-        doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODINDATA).get()
-        server_list = doc.to_dict()[kFLD_SERVER_LIST]
-        self.logger.info(f"오딘서버목록 로딩 완료 : {server_list}")
-        self.serverSet = set(server_list)
+        doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODIN_SERVER).get()
+        server_dic = doc.to_dict()
+        # self.logger.info(f"오딘서버목록 로딩 완료 : {server_dic}")
+        self.serverDic = server_dic
         return True
 
     def load_boss_dic(self) -> bool:
@@ -38,9 +64,9 @@ class BtDb():
         서버DB에서 오딘의 보스정보를 쿼리하여 self.bossDic에 저장
         :return: 성공여부
         '''
-        doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODINDATA).get()
-        boss_dic = doc.to_dict()[kFLD_BOSS_DIC]
-        self.logger.info(f"오딘보스목록 로딩 완료 : {boss_dic}")
+        doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODIN_BOSS).get()
+        boss_dic = doc.to_dict()
+        # self.logger.info(f"오딘보스목록 로딩 완료 : {boss_dic}")
         self.bossDic = boss_dic
         return True
 
@@ -50,7 +76,9 @@ class BtDb():
         :param odin_server_name: 검사할 오딘 서버명
         :return: odin_server_name 과 같은 오딘서버가 있는지 여부
         '''
-        return odin_server_name in self.serverSet
+        r = {server[1][kSERVER_NAME] for server in self.serverDic.items() if server[1][kSERVER_NAME] == odin_server_name}
+        self.logger.info(r)
+        return len(r) != 0
 
     def get_odin_guild_info(self, discord_guild_id: int) -> (bool, str, str):
         '''
@@ -84,7 +112,19 @@ class BtDb():
             }, merge=True)
         return True
 
-    def get_boss_item(self, arg_boss_name: str, arg_option_str: str= 'name'):
+    def get_boss_list(self):
+        '''
+        보스정보를 key를 제외하고 리스트로 리턴
+        :return: 보스정보 dic의 list
+        '''
+        # self.logger.info(self.bossDic)
+        if len(self.bossDic) == 0:
+            self.logger.debug(f"self.bossDic 이 비어있습니다.")
+            return None
+        boss_list = list(self.bossDic.values())
+        return sorted(boss_list, key=lambda x: (x[kCHAP_ORDER], x[kBOSS_LEVEL], x[kBOSS_ORDER]))
+
+    def get_boss_item_by_name(self, arg_boss_name: str):
         '''
         메모리에 로딩된 정보로 보스정보 찾아주기
         :param arg_boss_name: 보스명 혹은 보스별명
@@ -103,14 +143,7 @@ class BtDb():
             boss_name = item[kBOSS_NAME]
             boss_alias = item[kBOSS_ALIAS]
             if arg_boss_name == boss_name or arg_boss_name in boss_alias:
-                if arg_option_str == 'key':
-                    return key
-                elif arg_option_str == 'name':
-                    return boss_name
-                elif arg_option_str == 'chapter/name':
-                    return f"/{boss_name}"
-                else:
-                    return item
+                return item
         return None
 
 

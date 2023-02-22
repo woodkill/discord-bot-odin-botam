@@ -8,7 +8,8 @@ kCOL_BOSS = u'Boss'
 """
  document key
 """
-kDOC_ODINDATA = u'OdinData'
+kDOC_ODIN_SERVER = u'OdinServer'
+kDOC_ODIN_BOSS = u'OdinBoss'
 
 """
  field name
@@ -21,17 +22,16 @@ kFLD_GUILD_NAME = u'guildName'
 """
  dictionary key
 """
-kCHAP_NO = u'chapNumber'
+kSERVER_NAME = u'serverName'
+kCHAP_ORDER = u'chapOrder'
+kCHAP_NAME = u'chapName'
 kBOSS_LEVEL = u'bossLevel'
 kBOSS_ORDER = u'bossOrder'
 kBOSS_NAME = u'bossName'
 kBOSS_ALIAS = u'bossAlias'
-kBOSS_INTERVAL = u'interval'
-
-
-
-
-
-
-
-
+kBOSS_TYPE = u'bossType'
+kBOSS_FIXED_TIME = u'bossFiexedTime'
+kBOSS_INTERVAL = u'bossInterval'
+kBOSS_WEEKDAY_INFO = u'bossWeekdayInfo'
+kBOSS_WEEKDAY = u'bossWeekday'
+kBOSS_APPEARANCE_TIME = u'bossApprearanceTime'

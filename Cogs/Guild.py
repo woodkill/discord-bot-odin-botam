@@ -4,7 +4,9 @@ from discord.ext import commands
 from discord import app_commands
 # from discord import Interaction
 # from discord import Object
+from const_data import *
 import btdb
+
 
 
 class Guild(commands.Cog):
@@ -29,7 +31,7 @@ class Guild(commands.Cog):
     # async def hello(self, interaction: discord.Interaction, hello: str):
     #     await interaction.response.send_message('Answered')
 
-    @commands.command(name=u"길드등록")
+    @commands.command(name=cGUILD_REGISTER)
     async def register_guild(self, ctx: commands.Context, *args) -> None:
         '''
         "길드등록" 명령어를 처리한다.
@@ -37,9 +39,9 @@ class Guild(commands.Cog):
         :param args: 오딘서버명, 길드명
         :return: 없음
         '''
-        self.logger.debug(f"길드등록 {args}")
+        self.logger.info(f"{cGUILD_REGISTER} {args}")
         if len(args) != 2:
-            await ctx.reply(f"사용법 : .길드등록 ***오딘서버명 길드명***")
+            await ctx.reply(f"사용법 : .{cGUILD_REGISTER} ***오딘서버명 길드명***")
             return
         odin_server_name = args[0]
         odin_guild_name = args[1]
@@ -52,14 +54,14 @@ class Guild(commands.Cog):
             return
         await ctx.reply(f"길드등록 완료 : {odin_server_name}/{odin_guild_name}")
 
-    @commands.command(name=u"길드확인")
+    @commands.command(name=cGUILD_CONFIRM)
     async def check_guild(self, ctx: commands.Context) -> None:
         '''
         "길드확인" 명령어를 처리한다.
         :param ctx: context
         :return: 없음
         '''
-        self.logger.debug(f"길드확인")
+        self.logger.info(f"{cGUILD_CONFIRM}")
         success, odin_server_name, odin_guild_ame = self.db.get_odin_guild_info(ctx.guild.id)
         if success:
             await ctx.reply(f"{odin_server_name}/{odin_guild_ame}")
@@ -68,5 +70,5 @@ class Guild(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    logging.getLogger('cog').info(f"setup")
+    logging.getLogger('cog').info(f"setup Guild Cog")
     await bot.add_cog(Guild(bot))
