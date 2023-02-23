@@ -1,9 +1,11 @@
 import logging
+import asyncio
 import discord
-from discord.ext import commands
-from discord import app_commands
+from discord.ext import commands, tasks
+# from nextcord import app_commands
 # from discord import Interaction
 # from discord import Object
+import BtBot
 import btdb
 from const_key import *
 from const_data import *
@@ -12,7 +14,7 @@ from common import *
 
 class Boss(commands.Cog):
 
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: BtBot) -> None:
         self.bot = bot
         self.db: btdb.BtDb = bot.db
         self.logger = logging.getLogger('cog')
@@ -30,6 +32,10 @@ class Boss(commands.Cog):
         :return: None
         '''
         self.logger.info(f"{cBOSS_LIST}")
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
+            return
         boss_list = self.db.get_boss_list()
         if boss_list is None:
             await ctx.reply(f"보스정보가 없습니다. 관리자에게 문의하세요.")
@@ -50,11 +56,19 @@ class Boss(commands.Cog):
         :return: None
         '''
         self.logger.info(f"{cBOSS_INFO} {args}")
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
+            return
         # 명령어 형식이 맞는지 검사
         if len(args) != 1:
             await ctx.reply(f"사용법 : .{cBOSS_INFO} ***보스명***")
             return
         self.logger.debug(f"{cBOSS_INFO} 명령어 갯수 통과")
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
+            return
         # 보스명에 해당하는 보스정보 가져오기
         odin_boss_name = args[0]
         boss_dic = self.db.get_boss_item_by_name(odin_boss_name)
@@ -90,9 +104,9 @@ class Boss(commands.Cog):
             boss_apperance = f"매주 {str_weektimes} 젠"
 
         str_boss_type = {
-            cBOSS_TYPE_INTERVAL : f"인터벌",
-            cBOSS_TYPE_WEEKDAY_FIXED : f"특정요일, 특정시간",
-            cBOSS_TYPE_DAILY_FIXED : f"매일 같은 시간"
+            cBOSS_TYPE_INTERVAL: f"인터벌",
+            cBOSS_TYPE_WEEKDAY_FIXED: f"특정요일, 특정시간",
+            cBOSS_TYPE_DAILY_FIXED: f"매일 같은 시간"
 
         }.get(boss_type, f"알 수 없는 보스타입")
         msg = f"보스명 : {boss_dic[kBOSS_NAME]}\n" \
@@ -104,36 +118,6 @@ class Boss(commands.Cog):
 
         await ctx.reply(msg)
 
-    @commands.command(name=cBOTAM_WORLDBOSS_ONOFF)
-    async def onoff_world_boss_alarm(self, ctx: commands.Context, *args) -> None:
-        '''
-        월드보탐 온/오프 기능
-        :param ctx: Context
-        :param args: args[0] "켜기" 혹은 "끄기"
-        :return:
-        '''
-        logging.info(f"{cBOTAM_WORLDBOSS_ONOFF} {args}")
-        # 명령어 형식이 맞는지 검사
-        if len(args) != 1 or args[0].lower() not in {'on', 'off', u"켜기", u"끄기"}:
-            await ctx.reply(f"사용법 : .{cBOTAM_WORLDBOSS_ONOFF} on/off\n"
-                            f"사용법 : .{cBOTAM_WORLDBOSS_ONOFF} 켜기/끄기\n")
-            return
-        self.logger.debug(f"{cBOTAM_WORLDBOSS_ONOFF} : 명령어 갯수 통과")
-        if args[0].lower() in {"on", u"켜기"}:
-            pass
-        elif args[0].lower() in {"off", u"끄기"}:
-            pass
-        else:
-            await ctx.reply(f"사용법 : .{cBOTAM_WORLDBOSS_ONOFF} on/off\n"
-                            f"사용법 : .{cBOTAM_WORLDBOSS_ONOFF} 켜기/끄기\n")
-            return
-        alarm_dict = self.db.get_daily_fixed_boss_alarm_dict()
-        # self.logger.info(alarm_dict)
-        await ctx.reply(f"{alarm_dict} 이것을 처리할 것입니다....")
-
-
-
-
     @commands.command(name=cBOSS_ADD_ALIAS)
     async def register_alias_boss(self, ctx: commands.Context, *args) -> None:
         '''
@@ -143,6 +127,10 @@ class Boss(commands.Cog):
         :return:
         '''
         self.logger.info(f"{cBOSS_ADD_ALIAS} {args}")
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
+            return
         # 명령어 형식이 맞는지 검사
         if len(args) != 2:
             await ctx.reply(f"사용법 : .{cBOSS_ADD_ALIAS} ***정식보스명 추가할보스별명***")
@@ -155,43 +143,6 @@ class Boss(commands.Cog):
         str_new_boss_alias = args[1]
 
         await ctx.reply(f"{cBOSS_ADD_ALIAS} 구현중...")
-
-    # @commands.command(name=u"보스등록")
-    # async def register_boss(self, ctx: commands.Context, *args) -> None:
-    #     '''
-    #     "보스등록" 명령어를 처리한다.
-    #     :param ctx: context
-    #     :param args: 보스명, 남은시간
-    #     :return: 없음
-    #     '''
-    #     self.logger.debug(f"보스등록 {args}")
-    #     # 명령어 형식이 맞는지 검사
-    #     if len(args) != 2:
-    #         await ctx.reply(f"사용법 : .보스등록 ***보스명 남은시간***")
-    #         return
-    #     self.logger.debug(f"명령어 갯수 통과")
-    #     boss_alias = args[0]
-    #     str_remain_time = args[1]
-    #     # 남은시간이 형식에 맞게 되어 있는 지 검사
-    #     if not check_timedelta_format(str_remain_time):
-    #         await ctx.reply(f"남은시간은 'x일x시간x분x초' 형식이어야 합니다.")
-    #         return
-    #     d, h, m, s = get_seperated_timedelta_korean(str_remain_time.strip())
-    #     self.logger.debug(f"timestring 통과")
-    #     # 보스명이 보스목록에 있는지 검사
-    #     boss_name = self.db.get_boss_item(boss_alias, 'name')
-    #     if boss_name is None:
-    #         await ctx.reply(f"'{boss_alias}'은 등록된 보스명 혹은 보스별명이 아닙니다.")
-    #         return
-    #     self.logger.debug(f"보스명 검색 통과")
-    #     # 길드등록되어 있는지 검사
-    #     success, odin_server_name, odin_guild_ame = self.db.get_odin_guild_info(ctx.guild.id)
-    #     if not success:
-    #         await ctx.reply(f"먼저 길드등록을 해야 다른 명령어를 사용할 수 있습니다.")
-    #         return
-    #     self.logger.info(f"나머지 구현하세요")
-    #     # 여기에 현재시각에 남은시간을 더해서 보스타임 알람을 설정해 놓는 코드를 진행해야 한다.
-    #     await ctx.reply(f"{boss_name}, {d}, {h}, {m}, {s} ")
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -15,7 +15,7 @@ class BtDb():
         self.db = firestore.client()
         # logger setting
         self.logger = logging.getLogger('db')
-        # data storage
+        # master data storage
         self.serverDic: dict = {}
         self.bossDic: dict = {}
         # initialize
@@ -55,7 +55,7 @@ class BtDb():
         self.logger.info(r)
         return len(r) != 0
 
-    def get_odin_guild_info(self, discord_guild_id: int) -> (bool, str, str):
+    def get_odin_guild_info(self, discord_guild_id: int) -> (bool, dict):
         '''
         {discord_guild_id}로 등록된 길드 정보(오딘서버명, 길드명)을 쿼리하여 리턴한다.
         :param discord_guild_id:
@@ -65,26 +65,56 @@ class BtDb():
         doc = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).get()
         if not doc.exists:
             self.logger.info(f"디스코드서버ID:{discord_guild_id} 로 등록된 오딘길드가 없음.")
-            return False, None, None
-        dic = doc.to_dict()
-        odin_server_name = dic[kFLD_SERVER_NAME]
-        odin_guild_name = dic[kFLD_GUILD_NAME]
-        self.logger.info(f"get odin guild : 디스코드서버ID:{discord_guild_id} 오딘길드:{odin_server_name}/{odin_guild_name}")
-        return True, odin_server_name, odin_guild_name
+            return False, None
+        odin_guild_dic = doc.to_dict()
+        self.logger.info(f"get_odin_guild_info : {odin_guild_dic}")
+        return True, odin_guild_dic
 
-    def set_odin_guild_info(self, discord_guild_id: int, odin_server_name: str, odin_guild_name: str) -> bool:
+    def get_all_odin_guilds_info(self) -> (bool, dict):
+        '''
+
+        :return:
+        '''
+        odin_guilds_dic = {}
+        docs = self.db.collection(kCOL_ODINGUILD).stream()
+        # self.logger.info(f"{docs}")
+        for doc in docs:
+            odin_guilds_dic[int(doc.id)] = doc.to_dict()
+        self.logger.info(f"{odin_guilds_dic}")
+        return True, odin_guilds_dic
+
+    def set_odin_guild_info(self, discord_guild_id: int, channel_id: int, odin_server_name: str, odin_guild_name: str) -> bool:
         '''
         {discord_guild_id}를 document명으로 하여 길드정보를 서버DB에 저장한다.
-        :param discord_guild_id:
-        :param odin_server_name:
-        :param odin_guild_name:
+        :param discord_guild_id: 명령어를 접수한 디코 서버 id
+        :param channel_id: 현재 명령어를 접수한 디코 채널 id
+        :param odin_server_name: 등록할 오딘서버명
+        :param odin_guild_name: 등록할 오딘길드명
         :return: 성공여부
         '''
         str_discord_guild_id = str(discord_guild_id)
         col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set({
             kFLD_SERVER_NAME: odin_server_name,
-            kFLD_GUILD_NAME: odin_guild_name
+            kFLD_GUILD_NAME: odin_guild_name,
+            kFLD_CHANNEL_ID: channel_id
             }, merge=True)
+        return True
+
+    def remove_odin_guild_info(self, discord_guild_id: int):
+        str_discord_guild_id = str(discord_guild_id)
+        self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).delete()
+
+    def set_odin_guild_register_alarm_channel(self, discord_guild_id: int, channel_id: int) -> bool:
+        '''
+        {discord_guild_id}를 document명으로 하여 알람 받을 채널id를 서버DB에 저장한다.
+        :param discord_guild_id: 명령어를 접수한 디코 서버 id
+        :param channel_id: 명령어를 접수한 디코 채널 id
+        :return: 성공여부
+        '''
+        str_discord_guild_id = str(discord_guild_id)
+        col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set({
+            kFLD_CHANNEL_ID: channel_id
+        }, merge=True)
         return True
 
     def get_boss_list(self):
@@ -135,6 +165,20 @@ class BtDb():
                     alarm_dict[time] = []
                 alarm_dict[time].append(v[kBOSS_NAME])
         return alarm_dict
+
+    def get_boss_alarm_in_master(self, option: int = cBOSS_TYPE_DAILY_FIXED) -> dict:
+        # self.logger.info(f"{self.bossDic}")
+        alarm_dic = {}
+        for key, boss in self.bossDic.items():
+            if boss[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED:
+                boss_fixed_time_list = boss[kBOSS_FIXED_TIME]
+                for boss_fixed_time in boss_fixed_time_list:
+                    if boss_fixed_time not in alarm_dic:
+                        alarm_dic[boss_fixed_time] = [boss[kBOSS_NAME]]
+                    else:
+                        alarm_dic[boss_fixed_time].append(boss[kBOSS_NAME])
+        self.logger.info(alarm_dic)
+        return alarm_dic
 
     #
     # def delete_boss_collection(self, discord_guild_id, col_ref, batch_size):

@@ -18,6 +18,7 @@ kFLD_SERVER_LIST = u'serverList'
 kFLD_BOSS_DIC = u'bossDictionary'
 kFLD_SERVER_NAME = u'serverName'
 kFLD_GUILD_NAME = u'guildName'
+kFLD_CHANNEL_ID = u'channelId'
 
 """
  dictionary key
