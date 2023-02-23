@@ -3,8 +3,10 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from functools import cmp_to_key
 import logging
+import json
 from const_key import *
 from const_data import *
+
 
 class BtDb():
 
@@ -80,7 +82,7 @@ class BtDb():
         # self.logger.info(f"{docs}")
         for doc in docs:
             odin_guilds_dic[int(doc.id)] = doc.to_dict()
-        self.logger.info(f"{odin_guilds_dic}")
+        # self.logger.info(f"{odin_guilds_dic}")
         return True, odin_guilds_dic
 
     def set_odin_guild_info(self, discord_guild_id: int, channel_id: int, odin_server_name: str, odin_guild_name: str) -> bool:
@@ -167,16 +169,27 @@ class BtDb():
         return alarm_dict
 
     def get_boss_alarm_in_master(self, option: int = cBOSS_TYPE_DAILY_FIXED) -> dict:
+        '''
+        option으로 넘어온 보스타입에 따라 그에 맞는 alarm dict를 만들어 리턴한다.
+        :param option: 보스타입 상수 - cBOSS_TYPE_DAILY_FIXED, cBOSS_TYPE_INTERVAL, cBOSS_TYPE_WEEKDAY_FIXED
+        :return:
+        '''
         # self.logger.info(f"{self.bossDic}")
         alarm_dic = {}
-        for key, boss in self.bossDic.items():
+        for key, boss in self.bossDic.items(): # key는 보스키, boss는 firestore 보스 dict
             if boss[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED:
-                boss_fixed_time_list = boss[kBOSS_FIXED_TIME]
-                for boss_fixed_time in boss_fixed_time_list:
+                boss_fixed_time_list = boss[kBOSS_FIXED_TIME] # 보스가 뜨는 고정시간 목록
+                for boss_fixed_time in boss_fixed_time_list: # 각 고정시간을 key로 하고 값을 보스명 list인 dict 만든다.
                     if boss_fixed_time not in alarm_dic:
                         alarm_dic[boss_fixed_time] = [boss[kBOSS_NAME]]
                     else:
                         alarm_dic[boss_fixed_time].append(boss[kBOSS_NAME])
+            # elif boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
+            #     # TODO: 여기에 성채보스 타입 alarm_dic 만들어야 함
+            #     pass
+            # elif boss[kBOSS_TYPE] == cBOSS_TYPE_INTERVAL:
+            #     # TODO: 여기에 인터벌 타입 alarm_dic 만들어야 함
+            #     pass
         self.logger.info(alarm_dic)
         return alarm_dic
 

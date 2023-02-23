@@ -1,6 +1,7 @@
 import discord
 import asyncio
 import logging
+import json
 from discord.ext import commands, tasks
 from discord import app_commands
 # from discord import Interaction
@@ -8,7 +9,7 @@ from discord import app_commands
 from const_key import *
 from const_data import *
 import BtBot
-import btdb
+import BtDb
 
 
 class Alarm(commands.Cog):
@@ -32,44 +33,111 @@ class Alarm(commands.Cog):
     async def on_ready(self) -> None:
         self.logger.info(f"Alarm Cog loaded.")
 
-    @commands.command(name=cBOTAM_WORLDBOSS_ONOFF)
-    async def onoff_world_boss_alarm(self, ctx: commands.Context) -> None:
+    @commands.command(name=cALARM_STATUS)
+    async def alarm_status(self, ctx: commands.Context) -> None:
         '''
-        월드보탐 온/오프 기능
-        :param ctx: Context
-        :param args: args[0] "켜기" 혹은 "끄기"
+
+        :param ctx:
         :return:
         '''
-        logging.info(f"{cBOTAM_WORLDBOSS_ONOFF}")
+        logging.info(f"{cALARM_STATUS}")
+
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
             await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
             return
 
+        json_str = json.dumps(self.all_alarm_dic, indent=4, ensure_ascii=False)
+        await ctx.reply(f"{json_str}")
+
+
+    @commands.command(name=cALARM_WORLDBOSS_ONOFF)
+    async def onoff_world_boss_alarm(self, ctx: commands.Context) -> None:
+        '''
+        월드보탐 온/오프 기능
+        :param ctx: Context
+        :return:
+        '''
+        logging.info(f"{cALARM_WORLDBOSS_ONOFF}")
+
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
+            return
+
+        # 이 길드의 월드보탐이 현재 ON상태인지 OFF상태인지 검사
+        is_on = False
+        view_message = u"현재 월드보탐 알람은 꺼진 상태입니다."
+        if ctx.guild.id in self.all_alarm_dic:
+            if cBOSS_TYPE_DAILY_FIXED in self.all_alarm_dic[ctx.guild.id]:
+                is_on = True
+                view_message = u"현재 월드보탐 알람은 켜진 상태입니다."
+
         class Buttons(discord.ui.View):
-            def __init__(self, cog: commands.Cog, timeout=180):
-                self.cog: Alarm = cog
+            # TODO: all_alarm_dic을 BtBot으로 옮기는 작업을 하자. 아니면
+            def __init__(self, cog: Alarm, timeout=180):
+                self.cog = cog
                 super().__init__(timeout=timeout)
 
-            @discord.ui.button(label="켜기", style=discord.ButtonStyle.blurple)
+            @discord.ui.button(label="켜기", style=discord.ButtonStyle.blurple, disabled=is_on)
             async def world_boss_alarm_on(self, interaction: discord.Interaction, button: discord.ui.Button, ):
-                # self.cog.logger.info(f"{self.cog.alarm_dic}")
-                alarm_dic = self.cog.db.get_boss_alarm_in_master()
-                if len(alarm_dic) > 0:
-                    if ctx.guild.id not in self.cog.all_alarm_dic:
-                        self.cog.all_alarm_dic[ctx.guild.id] = {}
-                    guild_alarm_dic = self.cog.all_alarm_dic[ctx.guild.id]
-                    for alarm_time, boss_list in alarm_dic.items():
-                        guild_alarm_dic[alarm_time] = boss_list
+                '''
+                월드보탐 명령어의 reaction으로 나오는 켜기 버튼을 눌렀을 때 실행되는 함수이다.
+                Alarm Cog 객체 안의 all_alarm_dic dict에 이 길드의 월드보스 alarm_dic을 만들어 넣는다.
+                :param interaction:
+                :param button:
+                :return:
+                '''
+                # self.cog.logger.info(f"{self.cog.all_alarm_dic}")
+                # 마스터정보에서 월드보스 정보를 가지고 알람 dict 만들어줌
+                alarm_dic = self.cog.db.get_boss_alarm_in_master(option=cBOSS_TYPE_DAILY_FIXED)
+                if len(alarm_dic) == 0:
+                    await interaction.response.send_message(f"월드보스 정보가 없습니다.")
+                    return
+                # 전체 알람 dict에서 이 길드에 대한 알람 dict를 가져옴(없으면 만들어준다)
+                if ctx.guild.id not in self.cog.all_alarm_dic:
+                    self.cog.all_alarm_dic[ctx.guild.id] = {}
+                guild_alarm_dic = self.cog.all_alarm_dic[ctx.guild.id]
+                # 길드알람 dict에 cBOSS_TYPE_DAILY_FIXED를 키로 하는 dict를 가져옴.(없으면 만들어준다)
+                if cBOSS_TYPE_DAILY_FIXED not in guild_alarm_dic:
+                    guild_alarm_dic[cBOSS_TYPE_DAILY_FIXED] = {}
+                guild_daily_fiexed_alarm_dic = guild_alarm_dic[cBOSS_TYPE_DAILY_FIXED]
+                # 시각을 key로 하고 값을 해당시간에 뜨는 보스명 list로 하는 dict을 만든다. 하루에 여러번 고정시각이 있을 수 있음.
+                for alarm_time, boss_list in alarm_dic.items():
+                    guild_daily_fiexed_alarm_dic[alarm_time] = boss_list
                 self.cog.logger.info(f"{self.cog.all_alarm_dic}")
-                await interaction.response.send_message(f"켜기를 눌렀습니다.")
+                self.cog.logger.info(f"{json.dumps(self.cog.all_alarm_dic, indent=4, ensure_ascii=False)}")
+                # TODO: 여기에 이 길드의 월드보탐 상태를 firestore에 저장하는 코드 넣어야 함.(이 앱이 종료되었다가 다시 실행되어도 유지될 수 있도록)
+                message = u"월드보탐 알람을 등록하였습니다.\n"
+                for time, bosslist in guild_daily_fiexed_alarm_dic.items():
+                    message += f"{time} : {', '.join(bosslist)}\n"
+                message = message[:-1]
+                await interaction.response.send_message(f"{message}")
 
-            @discord.ui.button(label="끄기", style=discord.ButtonStyle.red)
+            @discord.ui.button(label="끄기", style=discord.ButtonStyle.red, disabled=not is_on)
             async def world_boss_alarm_off(self, interaction: discord.Interaction, button: discord.ui.Button, ):
-                await interaction.response.send_message(f"끄기를 눌렀습니다.")
+                '''
+                월드보탐 명령어의 reaction으로 나오는 끄기 버튼을 눌렀을 때 실행되는 함수이다.
+                Alarm Cog 객체 안의 all_alarm_dic dict에 이 길드의 월드보스 alarm_dic을 지운다.
+                :param interaction:
+                :param button:
+                :return:
+                '''
+                # self.cog.logger.info(f"{self.cog.all_alarm_dic}")
+                # # 전체 알람 dict에서 이 길드에 대한 알람 dict를 가져옴
+                if ctx.guild.id not in self.cog.all_alarm_dic:
+                    await interaction.response.send_message(f"설정된 알람이 없습니다.")
+                    return
+                guild_alarm_dic = self.cog.all_alarm_dic[ctx.guild.id]
+                # 길드알람 dict에 cBOSS_TYPE_DAILY_FIXED를 키로 하는 dict를 지운다.
+                guild_alarm_dic.pop(cBOSS_TYPE_DAILY_FIXED)
+                self.cog.logger.info(f"{self.cog.all_alarm_dic}")
+                self.cog.logger.info(f"{json.dumps(self.cog.all_alarm_dic, indent=4, ensure_ascii=False)}")
+                # TODO: 여기에 이 길드의 월드보탐 상태를 firestore에 저장하는 코드 넣어야 함.(이 앱이 종료되었다가 다시 실행되어도 유지될 수 있도록)
+                await interaction.response.send_message(u"월드보탐 알람을 삭제하였습니다.")
 
         view = Buttons(self)
-        await ctx.reply(f"현재 월드보탐 알람은 On입니다.", view=view)
+        await ctx.reply(view_message, view=view)
 
         # 명령어 형식이 맞는지 검사
         # if len(args) != 1 or args[0].lower() not in {'on', 'off', u"켜기", u"끄기"}:
@@ -150,7 +218,7 @@ class Alarm(commands.Cog):
         # self.logger.info(f"after_send_messag")
         if self.check_alarms.is_being_cancelled() and True:
             pass
-            # alarm dic에 데이타가 남아 있으면 서버에 업로드하는 과정?
+            # TODO: alarm dic에 데이타가 남아 있으면 서버에 업로드하는 과정?
 
 
 async def setup(bot: commands.Bot) -> None:

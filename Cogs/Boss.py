@@ -6,7 +6,7 @@ from discord.ext import commands, tasks
 # from discord import Interaction
 # from discord import Object
 import BtBot
-import btdb
+import BtDb
 from const_key import *
 from const_data import *
 from common import *

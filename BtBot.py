@@ -5,7 +5,7 @@ from discord.ext import commands
 # from discord import Game
 # from discord import Status
 # from discord import Object
-import btdb
+import BtDb
 from const_key import *
 
 
@@ -26,7 +26,7 @@ class BtBot(commands.Bot):
             "Cogs.Alarm"
         ]
         # firestore access
-        self.db = btdb.BtDb()
+        self.db = BtDb.BtDb()
         # working data storage
         self.odin_guilds_dic = {}
         self.logger.info('bot init complete')

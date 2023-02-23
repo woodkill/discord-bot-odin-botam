@@ -7,7 +7,7 @@ from discord import app_commands
 from const_key import *
 from const_data import *
 import BtBot
-import btdb
+import BtDb
 
 
 class Guild(commands.Cog):
