@@ -1,6 +1,37 @@
 import logging
+import discord
+from discord.ext import commands
 import re
+from common import *
+from const_data import *
 
+async def send_help_embed(ctx: commands.Context):
+    embed = discord.Embed(title=u"도움말")
+
+
+async def send_ok_embed(ctx: commands.Context, msg: str, additional: str = ""):
+    embed = discord.Embed(description=msg, color=discord.Color.blurple())
+    embed.set_footer(text=additional)
+    await ctx.send(embed=embed)
+
+
+async def send_error_embed(ctx: commands.Context, msg: str, additional: str = ""):
+    embed = discord.Embed(description=msg, color=discord.Color.red())
+    embed.set_footer(text=additional)
+    await ctx.send(embed=embed)
+
+
+async def send_usage_embed(ctx: commands.Context, cmd: str, title: str = u"사용법", additional: str = ""):
+    if cmd not in cUsageDic:
+        return
+    embed = discord.Embed(color=discord.Color.brand_green())
+    embed.add_field(name=title, value=f"{ctx.prefix}{cUsageDic[cmd]}")
+    embed.set_footer(text=additional)
+    await ctx.send(embed=embed)
+
+# def get_help_embed():
+#     embed = discord.Embed(title=u"사용법", description="준비된 명령은 아래와 같습니다.", color=discord.Color.brand_green())
+#     embed.add_field(name=)
 
 def check_timedelta_format(timedelta_str: str) -> bool:
     '''

@@ -8,6 +8,7 @@ from discord import app_commands
 # from discord import Object
 from const_key import *
 from const_data import *
+from common import *
 import BtBot
 import BtDb
 
@@ -16,7 +17,7 @@ class Alarm(commands.Cog):
 
     def __init__(self, bot: BtBot) -> None:
         self.bot = bot
-        self.db: btdb.BtDb = bot.db
+        self.db: BtDb.BtDb = bot.db
         self.logger = logging.getLogger('cog')
         # async task
         self.lock = asyncio.Lock()
@@ -44,12 +45,11 @@ class Alarm(commands.Cog):
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
-            await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
+            await send_error_embed(ctx, cMSG_REGISTER_GUILD_FIRST)
             return
 
         json_str = json.dumps(self.all_alarm_dic, indent=4, ensure_ascii=False)
         await ctx.reply(f"{json_str}")
-
 
     @commands.command(name=cALARM_WORLDBOSS_ONOFF)
     async def onoff_world_boss_alarm(self, ctx: commands.Context) -> None:
@@ -62,9 +62,10 @@ class Alarm(commands.Cog):
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
-            await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
+            await send_error_embed(ctx, cMSG_REGISTER_GUILD_FIRST)
             return
 
+        # TODO:여기를 embed로 바꿔야 한다.
         # 이 길드의 월드보탐이 현재 ON상태인지 OFF상태인지 검사
         is_on = False
         view_message = u"현재 월드보탐 알람은 꺼진 상태입니다."
@@ -201,7 +202,7 @@ class Alarm(commands.Cog):
         # await ch.send(f'{self.count} : test')
         pass
 
-    @tasks.loop(seconds=2, count=100)
+    @tasks.loop(seconds=10, count=100)
     async def check_alarms(self):
         # self.logger.info(f"check_alarms")
         await self.bot.wait_until_ready()

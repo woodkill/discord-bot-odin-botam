@@ -27,6 +27,7 @@ kFLD_ALARMS = u"alarms"
 kSERVER_NAME = u'serverName'
 kCHAP_ORDER = u'chapOrder'
 kCHAP_NAME = u'chapName'
+kBOSS_THUMBNAIL_URL = u'bossThumbnailUrl'
 kBOSS_LEVEL = u'bossLevel'
 kBOSS_ORDER = u'bossOrder'
 kBOSS_NAME = u'bossName'

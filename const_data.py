@@ -22,6 +22,17 @@ cBOSS_ADD_ALIAS = u"보스별명추가"
 cALARM_STATUS = u"알람상태"
 cALARM_WORLDBOSS_ONOFF = u"월드보탐"
 
+cUsageDic = {
+    cGUILD_REGISTER: f"{cGUILD_REGISTER} 오딘서버명 길드명",
+    cGUILD_CONFIRM: f"{cGUILD_CONFIRM}",
+    cGUILD_REGISTER_CHANNEL: f"{cGUILD_REGISTER_CHANNEL}",
+    cBOSS_LIST: f"{cBOSS_LIST}",
+    cBOSS_INFO: f"{cBOSS_INFO} 보스(별)명",
+    cBOSS_ADD_ALIAS: f"{cBOSS_ADD_ALIAS} 보스(별)명 추가할별명",
+    cALARM_STATUS: f"{cALARM_STATUS}",
+    cALARM_WORLDBOSS_ONOFF: f"{cALARM_WORLDBOSS_ONOFF}"
+}
+
 '''
 메세지
 '''

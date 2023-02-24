@@ -131,7 +131,7 @@ class BtDb():
         boss_list = list(self.bossDic.values())
         return sorted(boss_list, key=lambda x: (x[kCHAP_ORDER], x[kBOSS_LEVEL], x[kBOSS_ORDER]))
 
-    def get_boss_item_by_name(self, arg_boss_name: str):
+    def get_boss_item_by_name(self, arg_boss_name: str) -> (str, dict):
         '''
         메모리에 로딩된 정보로 보스정보 찾아주기
         :param arg_boss_name: 보스명 혹은 보스별명
@@ -144,14 +144,14 @@ class BtDb():
         '''
         self.logger.info(self.bossDic)
         if len(self.bossDic) == 0:
-            return None
+            return None, None
         # self.bossDic의 보스명과 보스별명을 검사하여 해당 보스키값을 리턴한다.
         for key, item in self.bossDic.items():
             boss_name = item[kBOSS_NAME]
             boss_alias = item[kBOSS_ALIAS]
             if arg_boss_name == boss_name or arg_boss_name in boss_alias:
-                return item
-        return None
+                return key, item
+        return None, None
 
     def get_daily_fixed_boss_alarm_dict(self) -> dict:
         '''
@@ -185,10 +185,10 @@ class BtDb():
                     else:
                         alarm_dic[boss_fixed_time].append(boss[kBOSS_NAME])
             # elif boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
-            #     # TODO: 여기에 성채보스 타입 alarm_dic 만들어야 함
+            #     # TODO: 3 여기에 성채보스 타입 alarm_dic 만들어야 함
             #     pass
             # elif boss[kBOSS_TYPE] == cBOSS_TYPE_INTERVAL:
-            #     # TODO: 여기에 인터벌 타입 alarm_dic 만들어야 함
+            #     # TODO: 3 여기에 인터벌 타입 alarm_dic 만들어야 함
             #     pass
         self.logger.info(alarm_dic)
         return alarm_dic

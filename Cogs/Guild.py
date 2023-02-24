@@ -6,6 +6,7 @@ from discord import app_commands
 # from discord import Object
 from const_key import *
 from const_data import *
+from common import *
 import BtBot
 import BtDb
 
@@ -14,7 +15,7 @@ class Guild(commands.Cog):
 
     def __init__(self, bot: BtBot) -> None:
         self.bot = bot
-        self.db: btdb.BtDb = bot.db
+        self.db: BtDb.BtDb = bot.db
         self.logger = logging.getLogger('cog')
 
     @commands.Cog.listener()
@@ -41,19 +42,18 @@ class Guild(commands.Cog):
         '''
         self.logger.info(f"{cGUILD_REGISTER} {args}")
         if len(args) != 2:
-            await ctx.reply(f"사용법 : .{cGUILD_REGISTER} ***오딘서버명 길드명***")
+            await send_usage_embed(ctx, cGUILD_REGISTER, additional=u"서버명은 오딘 서버선택창에 표시되는 이름과 동일해야 합니다.")
             return
         odin_server_name = args[0]
         odin_guild_name = args[1]
         if not self.db.check_valid_server_name(odin_server_name):
-            await ctx.reply(f"올바른 오딘서버명이 아닙니다 : '{odin_server_name}'")
+            await send_error_embed(ctx, f"'{odin_server_name}' : 올바른 오딘서버명이 아닙니다")
             return
         success = self.db.set_odin_guild_info(ctx.guild.id, ctx.channel.id, odin_server_name, odin_guild_name)
         if not success:
-            await ctx.reply(f"길드등록에 실패하였습니다.")
+            await send_error_embed(ctx, f"길드등록에 실패하였습니다.")
             return
-        await ctx.reply(f"길드등록 완료 : {odin_server_name}/{odin_guild_name}\n"
-                        f"앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
+        await send_ok_embed(ctx, f"길드등록 완료 : {odin_server_name}/{odin_guild_name}", additional=f"앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
         self.bot.update_guild_info(ctx.guild.id, {
             kFLD_CHANNEL_ID: ctx.channel.id,
             kFLD_SERVER_NAME: odin_server_name,
@@ -69,23 +69,23 @@ class Guild(commands.Cog):
         '''
         self.logger.info(f"{cGUILD_CONFIRM}")
         success, odin_guild_dic = self.db.get_odin_guild_info(ctx.guild.id)
-        if success:
-            await ctx.reply(f"{odin_guild_dic[kFLD_SERVER_NAME]}/{odin_guild_dic[kFLD_GUILD_NAME]}")
-        else:
-            await ctx.reply(f"등록된 길드가 없습니다.")
+        if not success:
+            await send_error_embed(ctx, f"등록된 길드가 없습니다.")
+            return
+        await send_ok_embed(ctx, f"{odin_guild_dic[kFLD_SERVER_NAME]}/{odin_guild_dic[kFLD_GUILD_NAME]}")
 
     @commands.command(name=cGUILD_REGISTER_CHANNEL)
     async def register_alarm_channel(self, ctx: commands.Context) -> None:
         self.logger.info(f"{cGUILD_REGISTER_CHANNEL}")
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
-            await ctx.reply(cMSG_REGISTER_GUILD_FIRST)
+            await send_error_embed(ctx, cMSG_REGISTER_GUILD_FIRST)
             return
         success = self.db.set_odin_guild_register_alarm_channel(ctx.guild.id, ctx.channel.id)
-        if success:
-            await ctx.reply(f"앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
-        else:
-            await ctx.reply(f"{cGUILD_REGISTER_CHANNEL} 실패하였습니다.")
+        if not success:
+            await send_error_embed(ctx, f"{cGUILD_REGISTER_CHANNEL} 실패하였습니다.")
+            return
+        await send_ok_embed(ctx, f"앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
 
 
 async def setup(bot: commands.Bot) -> None:

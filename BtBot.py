@@ -7,6 +7,7 @@ from discord.ext import commands
 # from discord import Object
 import BtDb
 from const_key import *
+from const_data import *
 
 
 class BtBot(commands.Bot):
@@ -44,7 +45,6 @@ class BtBot(commands.Bot):
         if success:
             self.odin_guilds_dic = odin_guilds_dic
         # self.logger.info(f"{self.odin_guilds_dic}")
-
         # game = Game("....")
         # await self.change_presence(status=Status.online, activity=game)
 
@@ -59,6 +59,22 @@ class BtBot(commands.Bot):
         del self.odin_guilds_dic[guild.id]
         # self.logger.info(f"{self.odin_guilds_dic}")
 
+    async def on_message(self, message: discord.Message):
+        if message.author == self.user:
+            return
+        if not message.content.startswith(self.command_prefix):
+            return
+        if self.is_ready_commands(message.content, self.command_prefix):
+            await self.process_commands(message)
+        # await message.channel.send(f'네 듣고 있어요.')
+
+    def is_ready_commands(self, msg: str, prefix: str) -> bool:
+        self.logger.info(msg)
+        cmd = msg.split()[0][len(prefix):]
+        if cmd not in cUsageDic:
+            return False
+        return True
+
     def update_guild_info(self, dicord_guild_id: int, guild_dic: dict):
         self.odin_guilds_dic[dicord_guild_id] = guild_dic
         # self.logger.info(f"{self.odin_guilds_dic}")
@@ -69,13 +85,3 @@ class BtBot(commands.Bot):
         if kFLD_CHANNEL_ID not in self.odin_guilds_dic[guild_id]:
             return False
         return True
-
-    # def check_guild(self, guild_id:int):
-
-    # async def on_message(self, message):
-    #     await self.process_commands(message)
-    #     if message.content[0] == self.command_prefix:
-    #         return
-    #     if message.author == self.user:
-    #         return
-    #     await message.channel.send(f'네 듣고 있어요.')
