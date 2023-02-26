@@ -20,6 +20,8 @@ kFLD_SERVER_NAME = u'serverName'
 kFLD_GUILD_NAME = u'guildName'
 kFLD_CHANNEL_ID = u'channelId'
 kFLD_ALARMS = u"alarms"
+kFLD_ALARMED = u"alarmed"
+kFLD_BOSS_LIST = u"bossList"
 
 """
  dictionary key
@@ -38,3 +40,7 @@ kBOSS_INTERVAL = u'bossInterval'
 kBOSS_WEEKDAY_INFO = u'bossWeekdayInfo'
 kBOSS_WEEKDAY = u'bossWeekday'
 kBOSS_APPEARANCE_TIME = u'bossApprearanceTime'
+
+kCMD_USAGE = u"usage"
+kCMD_EXPLANATION = u"explanation"
+

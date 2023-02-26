@@ -1,3 +1,4 @@
+import datetime
 import logging.config
 import discord
 from discord.ext import commands
@@ -8,6 +9,7 @@ from discord.ext import commands
 import BtDb
 from const_key import *
 from const_data import *
+from common import *
 
 
 class BtBot(commands.Bot):
@@ -16,7 +18,7 @@ class BtBot(commands.Bot):
         self.logger = logging.getLogger('bot')
         self.logger.info('init')
         super().__init__(
-            command_prefix='.',
+            command_prefix=cPREFIX,
             intents=discord.Intents.all(),
             sync_command=True,
             application_id=1074530999947493438
@@ -30,6 +32,7 @@ class BtBot(commands.Bot):
         self.db = BtDb.BtDb()
         # working data storage
         self.odin_guilds_dic = {}
+        # for test
         self.logger.info('bot init complete')
 
     async def setup_hook(self):
@@ -40,13 +43,13 @@ class BtBot(commands.Bot):
         await self.tree.sync()
 
     async def on_ready(self):
-        self.logger.info(f"{self.user} 준비되었습니다.")
+        # 서버 DB에서 이봇을 사용하고 있는 길드정보 및 알람정보 로딩
         success, odin_guilds_dic = self.db.get_all_odin_guilds_info()
         if success:
             self.odin_guilds_dic = odin_guilds_dic
         # self.logger.info(f"{self.odin_guilds_dic}")
-        # game = Game("....")
         # await self.change_presence(status=Status.online, activity=game)
+        self.logger.info(f"{self.user} 준비되었습니다.")
 
     async def on_guild_join(self, guild):
         self.logger.info(f"{guild.name} 서버에 조인하였습니다.")
@@ -60,16 +63,17 @@ class BtBot(commands.Bot):
         # self.logger.info(f"{self.odin_guilds_dic}")
 
     async def on_message(self, message: discord.Message):
-        if message.author == self.user:
+        if message.author == self.user: # 이 봇이 보낸 메세지는 무시
             return
-        if not message.content.startswith(self.command_prefix):
+        if not message.content.startswith(self.command_prefix): # 명령어가 아닌 경우 무시
             return
-        if self.is_ready_commands(message.content, self.command_prefix):
-            await self.process_commands(message)
-        # await message.channel.send(f'네 듣고 있어요.')
+        if not self.is_ready_commands(message.content, self.command_prefix): # 명령어 형식이지만 명령어 목록에 없으면...
+            await message.channel.send(to_guide_code_block(f"{cMSG_NO_EXISTING_CMD}\n{self.command_prefix}{cCMD_GUILD_HELP} 해보세요"))
+            return
+        await self.process_commands(message)
 
     def is_ready_commands(self, msg: str, prefix: str) -> bool:
-        self.logger.info(msg)
+        # self.logger.info(msg)
         cmd = msg.split()[0][len(prefix):]
         if cmd not in cUsageDic:
             return False

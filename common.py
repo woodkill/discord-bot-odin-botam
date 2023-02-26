@@ -5,8 +5,65 @@ import re
 from common import *
 from const_data import *
 
-async def send_help_embed(ctx: commands.Context):
-    embed = discord.Embed(title=u"도움말")
+
+def to_ok_code_block(msg: str) -> str:
+    return f"```ansi\n" \
+           f"\033[34;1m" \
+           f"{msg}\n" \
+           f"\033[0m\n" \
+           f"```"
+
+
+def to_error_code_block(msg: str) -> str:
+    return f"```ansi\n" \
+           f"\033[31;1m" \
+           f"{msg}\n" \
+           f"\033[0m\n" \
+           f"```"
+
+
+def to_guide_code_block(msg: str) -> str:
+    return f"```ansi\n" \
+           f"\033[32;1m" \
+           f"{msg}\n" \
+           f"\033[0m\n" \
+           f"```"
+
+
+async def send_ok_message(ctx: commands.Context, msg: str):
+    lapping_msg = f"```ansi\n" \
+                  f"\033[34;1m" \
+                  f"{msg}\n" \
+                  f"\033[0m\n" \
+                  f"```"
+    await ctx.send(lapping_msg)
+
+
+async def send_error_message(ctx: commands.Context, msg: str):
+    lapping_msg = f"```ansi\n" \
+                  f"\033[31;1m" \
+                  f"{msg}\n" \
+                  f"\033[0m\n" \
+                  f"```"
+    await ctx.send(lapping_msg)
+
+
+async def send_guide_message(ctx: commands.Context, msg: str):
+    lapping_msg = f"```ansi\n" \
+                  f"\033[32;1m" \
+                  f"{msg}\n" \
+                  f"\033[0m\n" \
+                  f"```"
+    await ctx.send(lapping_msg)
+
+
+async def response_error_message(response: discord.Interaction.response, msg:str):
+    lapping_msg = f"```ansi\n" \
+                  f"\033[31;1m" \
+                  f"{msg}\n" \
+                  f"\033[0m\n" \
+                  f"```"
+    await response.send_message(lapping_msg)
 
 
 async def send_ok_embed(ctx: commands.Context, msg: str, additional: str = ""):
@@ -24,14 +81,24 @@ async def send_error_embed(ctx: commands.Context, msg: str, additional: str = ""
 async def send_usage_embed(ctx: commands.Context, cmd: str, title: str = u"사용법", additional: str = ""):
     if cmd not in cUsageDic:
         return
-    embed = discord.Embed(color=discord.Color.brand_green())
-    embed.add_field(name=title, value=f"{ctx.prefix}{cUsageDic[cmd]}")
-    embed.set_footer(text=additional)
+    embed = discord.Embed(
+        title=f"{ctx.prefix}{cUsageDic[cmd][kCMD_USAGE]}",
+        description=cUsageDic[cmd][kCMD_EXPLANATION] if additional == "" else additional,
+        color=discord.Color.brand_green())
+    # embed.add_field(name=title, value=f"{ctx.prefix}{cUsageDic[cmd][kCMD_USAGE]}")
+    # str_explanation = cUsageDic[cmd][kCMD_EXPLANATION] if additional == "" else additional
+    # embed.set_footer(text=str_explanation)
     await ctx.send(embed=embed)
 
-# def get_help_embed():
-#     embed = discord.Embed(title=u"사용법", description="준비된 명령은 아래와 같습니다.", color=discord.Color.brand_green())
-#     embed.add_field(name=)
+
+def get_help_list_embed():
+    embed = discord.Embed(title=u"사용법", description="[,] 안에 있는 것은 생략 가능", color=discord.Color.brand_green())
+    for cmd, usage in cUsageDic.items():
+        str_usage = f"{cPREFIX}{usage[kCMD_USAGE]}"
+        str_explanation = usage[kCMD_EXPLANATION]
+        embed.add_field(name=str_usage, value=str_explanation, inline=False)
+    return embed
+
 
 def check_timedelta_format(timedelta_str: str) -> bool:
     '''
@@ -47,7 +114,7 @@ def check_timedelta_format(timedelta_str: str) -> bool:
     return True
 
 
-def get_seperated_timedelta_korean(timedelta_str: str) -> (int, int, int, int):
+def get_separated_timedelta_korean(timedelta_str: str) -> (int, int, int, int):
     '''
     시간 문자열을 분석, 쪼개서 리턴하는 함수.
     :param timedelta_str: "0일0시간0분0초" 형식의 문자열
@@ -63,7 +130,7 @@ def get_seperated_timedelta_korean(timedelta_str: str) -> (int, int, int, int):
     return d, h, m, s
 
 
-def get_seperated_timedlta_ddhhmm(timedelta_str: str) -> (int, int, int, int):
+def get_separated_timedelta_ddhhmm(timedelta_str: str) -> (int, int, int, int):
     '''
     시간 문자열을 분석, 쪼개서 리턴하는 함수.
     :param timedelta_str: "dd:hh:mm" 형식의 문자열
@@ -78,7 +145,8 @@ def get_seperated_timedlta_ddhhmm(timedelta_str: str) -> (int, int, int, int):
     s = 0
     return d, h, m, s
 
-def get_seperated_time_hhmm(timedelta_str: str) -> (int, int, int, int):
+
+def get_separated_time_hhmm(timedelta_str: str) -> (int, int, int, int):
     '''
     시각(시간이 아님) 문자열을 분석, 쪼개서 리턴하는 함수.
     :param timedelta_str: 'hh:mm' 형식의 문자열

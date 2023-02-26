@@ -23,31 +23,7 @@ class Boss(commands.Cog):
     async def on_ready(self) -> None:
         self.logger.info(f"Boss Cog loaded.")
 
-    @commands.command(name=cBOSS_LIST)
-    async def list_boss(self, ctx: commands.Context) -> None:
-        '''
-        등록되어 있는 보스목록을 보여준다.
-        TODO: 현재는 마스터 보스리스트에서 보여준다. 디버깅용. 실제로는 보스알림등록한 보스를 보여줘야 함. 아니면 그쪽은 "보탐어쩌구.."로 명령을 만든다.
-        :param ctx: context
-        :return: None
-        '''
-        self.logger.info(f"{cBOSS_LIST}")
-        # 먼저 길드등록이 되어 있는 지 검사
-        if not self.bot.is_guild_registerd(ctx.guild.id):
-            await send_error_embed(ctx, cMSG_REGISTER_GUILD_FIRST)
-            return
-        boss_list = self.db.get_boss_list()
-        if boss_list is None:
-            await send_error_embed(ctx, f"보스정보가 없습니다. 관리자에게 문의하세요.")
-        # sl = sorted(boss_list, key=lambda x: (x[kCHAP_NAME], x[kBOSS_LEVEL], x[kBOSS_ORDER]))
-        # self.logger.info(sl)
-        embed = discord.Embed(title=f"보스목록", description=f"모든 보스의 간략한 정보입니다.", color=discord.Color.purple())
-        for boss in boss_list:
-            str_boss_alias = ",".join(boss[kBOSS_ALIAS])
-            embed.add_field(name=boss[kBOSS_NAME], value=f"{boss[kCHAP_NAME]} / {boss[kBOSS_LEVEL]}\n별명 : {str_boss_alias}", inline=False)
-        await ctx.send(embed=embed)
-
-    @commands.command(name=cBOSS_INFO)
+    @commands.command(name=cCMD_BOSS_INFO)
     async def info_boss(self, ctx: commands.Context, *args) -> None:
         '''
         보스정보를 보여준다.
@@ -55,25 +31,41 @@ class Boss(commands.Cog):
         :param args: args[0] : 보스명
         :return: None
         '''
-        self.logger.info(f"{cBOSS_INFO} {args}")
+        self.logger.info(f"{cCMD_BOSS_INFO} {args}")
+
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
-            await send_error_embed(ctx, cMSG_REGISTER_GUILD_FIRST)
+            await send_guide_message(ctx, cMSG_REGISTER_GUILD_FIRST)
             return
+
         # 명령어 형식이 맞는지 검사
-        if len(args) != 1:
-            await send_usage_embed(ctx, cBOSS_INFO)
+        if len(args) > 1:
+            await send_usage_embed(ctx, cCMD_BOSS_INFO)
             return
-        self.logger.debug(f"{cBOSS_INFO} 명령어 갯수 통과")
-        # 보스명에 해당하는 보스정보 가져오기
+        # self.logger.debug(f"{cCMD_BOSS_INFO} 명령어 갯수 통과")
+
+        if len(args) == 0: # 보스명을 인자로 달지 않은 경우
+            boss_list = self.db.get_boss_list() # 보스정보를 소팅해서 받는다.
+            if boss_list is None:
+                await send_error_message(ctx, f"보스정보가 없습니다. 관리자에게 문의하세요.")
+            embed = discord.Embed(title=f"보스목록", description=f"모든 보스의 간략한 정보입니다.", color=discord.Color.purple())
+            for boss in boss_list:
+                str_boss_alias = ",".join(boss[kBOSS_ALIAS])
+                embed.add_field(name=boss[kBOSS_NAME],
+                                value=f"{boss[kCHAP_NAME]} / {boss[kBOSS_LEVEL]}\n별명 : {str_boss_alias}", inline=False)
+            await ctx.send(embed=embed)
+            return
+
+        # 보스명이 인자로 넘어온 경우 : 보스명에 해당하는 보스정보 가져오기
         odin_boss_name = args[0]
         boss_key, boss_dic = self.db.get_boss_item_by_name(odin_boss_name)
+
         # 보스 타입에 따라 보스정보 표시 문자열을 만든다.
         boss_type = boss_dic[kBOSS_TYPE]
         str_boss_apperance = ""
         if boss_type == cBOSS_TYPE_INTERVAL:
             boss_interval = boss_dic[kBOSS_INTERVAL]
-            d, h, m, s = get_seperated_timedlta_ddhhmm(boss_interval)
+            d, h, m, s = get_separated_timedelta_ddhhmm(boss_interval)
             str_interval = ""
             if d > 0:
                 str_interval += f"{d}일"
@@ -117,16 +109,7 @@ class Boss(commands.Cog):
         embed.add_field(name="출현", value=str_boss_apperance, inline=False)
         await ctx.send(file=file, embed=embed)
 
-        # msg = f"보스명 : {boss_dic[kBOSS_NAME]}\n" \
-        #       f"지역 : {boss_dic[kCHAP_NAME]}\n" \
-        #       f"종류 : {boss_dic[kBOSS_LEVEL]}\n" \
-        #       f"별명 : {', '.join(boss_dic[kBOSS_ALIAS])}\n" \
-        #       f"타입 : {str_boss_type}\n" \
-        #       f"출현 : {str_boss_apperance}"
-        #
-        # await ctx.reply(msg)
-
-    @commands.command(name=cBOSS_ADD_ALIAS)
+    @commands.command(name=cCMD_BOSS_ADD_ALIAS)
     async def register_alias_boss(self, ctx: commands.Context, *args) -> None:
         '''
         TODO : 3 이 봇을 여러개의 길드가 사용할 경우 추가한 보스별명이 다른 길드에는 영향이 가지 않도록 구현해야 한다. 다시 생각해 보도록...
@@ -134,16 +117,16 @@ class Boss(commands.Cog):
         :param args:
         :return:
         '''
-        self.logger.info(f"{cBOSS_ADD_ALIAS} {args}")
+        self.logger.info(f"{cCMD_BOSS_ADD_ALIAS} {args}")
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
-            await send_error_embed(ctx, cMSG_REGISTER_GUILD_FIRST)
+            await send_guide_message(ctx, cMSG_REGISTER_GUILD_FIRST)
             return
         # 명령어 형식이 맞는지 검사
         if len(args) != 2:
-            await send_usage_embed(ctx, cBOSS_ADD_ALIAS, additional=f"추가할 별명은 기존에 사용하고 있지 않아야 합니다.")
+            await send_usage_embed(ctx, cCMD_BOSS_ADD_ALIAS, additional=f"추가할 별명은 기존에 사용하고 있지 않아야 합니다.")
             return
-        self.logger.debug(f"{cBOSS_ADD_ALIAS} 명령어 갯수 통과")
+        self.logger.debug(f"{cCMD_BOSS_ADD_ALIAS} 명령어 갯수 통과")
         # 앞의 보스명은 보스명이나 별명에 있어야 하고 뒤의 보스별명은 기존에 없어야 한다.
         # TODO: 3 마저 구현해야 한다.
         str_exist_boss_name = args[0]
@@ -151,7 +134,7 @@ class Boss(commands.Cog):
 
         str_new_boss_alias = args[1]
 
-        await ctx.reply(f"{cBOSS_ADD_ALIAS} 구현중...")
+        await ctx.reply(f"{cCMD_BOSS_ADD_ALIAS} 구현중...")
 
 
 async def setup(bot: commands.Bot) -> None:

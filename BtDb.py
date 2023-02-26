@@ -1,10 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-from functools import cmp_to_key
 import logging
-import json
-from const_key import *
 from const_data import *
 
 
@@ -23,13 +20,13 @@ class BtDb():
         # initialize
         self.load_server_dic()
         self.load_boss_dic()
-        self.logger.info(f"btdb init complete")
+        self.logger.info(f"BtDb init complete")
 
     def load_server_dic(self) -> bool:
-        '''
-        서버DB에서 오딘 서버목록을 쿼리하여 self.serverSet에 저장
+        """
+        서버 DB에서 오딘 서버 목록을 검색하여 self.serverSet에 저장
         :return: 성공여부
-        '''
+        """
         doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODIN_SERVER).get()
         server_dic = doc.to_dict()
         # self.logger.info(f"오딘서버목록 로딩 완료 : {server_dic}")
@@ -37,34 +34,42 @@ class BtDb():
         return True
 
     def load_boss_dic(self) -> bool:
-        '''
+        """
         서버DB에서 오딘의 보스정보를 쿼리하여 self.bossDic에 저장
         :return: 성공여부
-        '''
-        doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODIN_BOSS).get()
+        """
+        try:
+            doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODIN_BOSS).get()
+        except Exception as e:
+            self.logger.debug(e)
+            return False
         boss_dic = doc.to_dict()
         # self.logger.info(f"오딘보스목록 로딩 완료 : {boss_dic}")
         self.bossDic = boss_dic
         return True
 
     def check_valid_server_name(self, odin_server_name: str) -> bool:
-        '''
+        """
         오딘서버명 진위 여부 판단
         :param odin_server_name: 검사할 오딘 서버명
         :return: odin_server_name 과 같은 오딘서버가 있는지 여부
-        '''
+        """
         r = {server[1][kSERVER_NAME] for server in self.serverDic.items() if server[1][kSERVER_NAME] == odin_server_name}
         self.logger.info(r)
         return len(r) != 0
 
     def get_odin_guild_info(self, discord_guild_id: int) -> (bool, dict):
-        '''
+        """
         {discord_guild_id}로 등록된 길드 정보(오딘서버명, 길드명)을 쿼리하여 리턴한다.
         :param discord_guild_id:
         :return: (성공여부, 오딘서버명, 길드명)
-        '''
+        """
         str_discord_guild_id = str(discord_guild_id)
-        doc = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).get()
+        try:
+            doc = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).get()
+        except Exception as e:
+            self.logger.debug(e)
+            return
         if not doc.exists:
             self.logger.info(f"디스코드서버ID:{discord_guild_id} 로 등록된 오딘길드가 없음.")
             return False, None
@@ -73,12 +78,16 @@ class BtDb():
         return True, odin_guild_dic
 
     def get_all_odin_guilds_info(self) -> (bool, dict):
-        '''
+        """
 
         :return:
-        '''
+        """
         odin_guilds_dic = {}
-        docs = self.db.collection(kCOL_ODINGUILD).stream()
+        try:
+            docs = self.db.collection(kCOL_ODINGUILD).stream()
+        except Exception as e:
+            self.logger.debug(e)
+            return False, None
         # self.logger.info(f"{docs}")
         for doc in docs:
             odin_guilds_dic[int(doc.id)] = doc.to_dict()
@@ -86,44 +95,56 @@ class BtDb():
         return True, odin_guilds_dic
 
     def set_odin_guild_info(self, discord_guild_id: int, channel_id: int, odin_server_name: str, odin_guild_name: str) -> bool:
-        '''
+        """
         {discord_guild_id}를 document명으로 하여 길드정보를 서버DB에 저장한다.
         :param discord_guild_id: 명령어를 접수한 디코 서버 id
         :param channel_id: 현재 명령어를 접수한 디코 채널 id
         :param odin_server_name: 등록할 오딘서버명
         :param odin_guild_name: 등록할 오딘길드명
         :return: 성공여부
-        '''
+        """
         str_discord_guild_id = str(discord_guild_id)
-        col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set({
-            kFLD_SERVER_NAME: odin_server_name,
-            kFLD_GUILD_NAME: odin_guild_name,
-            kFLD_CHANNEL_ID: channel_id
-            }, merge=True)
+        try:
+            col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set({
+                kFLD_SERVER_NAME: odin_server_name,
+                kFLD_GUILD_NAME: odin_guild_name,
+                kFLD_CHANNEL_ID: channel_id,
+                kFLD_ALARMS: {}
+                }, merge=True)
+        except Exception as e:
+            self.logger.debug(e)
+            return False
         return True
 
     def remove_odin_guild_info(self, discord_guild_id: int):
         str_discord_guild_id = str(discord_guild_id)
-        self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).delete()
+        try:
+            self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).delete()
+        except Exception as e:
+            self.logger.debug(e)
 
     def set_odin_guild_register_alarm_channel(self, discord_guild_id: int, channel_id: int) -> bool:
-        '''
+        """
         {discord_guild_id}를 document명으로 하여 알람 받을 채널id를 서버DB에 저장한다.
         :param discord_guild_id: 명령어를 접수한 디코 서버 id
         :param channel_id: 명령어를 접수한 디코 채널 id
         :return: 성공여부
-        '''
+        """
         str_discord_guild_id = str(discord_guild_id)
-        col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set({
-            kFLD_CHANNEL_ID: channel_id
-        }, merge=True)
+        try:
+            col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set({
+                kFLD_CHANNEL_ID: channel_id
+            }, merge=True)
+        except Exception as e:
+            self.logger.debug(e)
+            return False
         return True
 
     def get_boss_list(self):
-        '''
+        """
         보스정보를 key를 제외하고 리스트로 리턴
         :return: 보스정보 dic의 list
-        '''
+        """
         # self.logger.info(self.bossDic)
         if len(self.bossDic) == 0:
             self.logger.debug(f"self.bossDic 이 비어있습니다.")
@@ -132,17 +153,16 @@ class BtDb():
         return sorted(boss_list, key=lambda x: (x[kCHAP_ORDER], x[kBOSS_LEVEL], x[kBOSS_ORDER]))
 
     def get_boss_item_by_name(self, arg_boss_name: str) -> (str, dict):
-        '''
+        """
         메모리에 로딩된 정보로 보스정보 찾아주기
         :param arg_boss_name: 보스명 혹은 보스별명
-        :param arg_option_str: 리턴받을 값의 방식을 정하는 옵션
         :return: 찾는 보스가 있을 경우 옵션에 따라 리턴한다.
         'key' :  key문자열
         'name' : 보스명,
         'chapter/name' : 지역명/보스명
         'item' : 보스정보dic
-        '''
-        self.logger.info(self.bossDic)
+        """
+        # self.logger.info(self.bossDic)
         if len(self.bossDic) == 0:
             return None, None
         # self.bossDic의 보스명과 보스별명을 검사하여 해당 보스키값을 리턴한다.
@@ -153,45 +173,84 @@ class BtDb():
                 return key, item
         return None, None
 
-    def get_daily_fixed_boss_alarm_dict(self) -> dict:
-        '''
-        보스정보 dict에서 고정타임 보스에 해당하는 정보를 찾아서 {시각:[보스명리스트], ...} 형식의 dict로 반환해 준다.
-        :return: {시각:[보스명리스트], ...}
-        '''
-        fixed_boss_dict = {k: v for k, v in self.bossDic.items() if v[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED}
-        alarm_dict = {}
-        for k, v in fixed_boss_dict.items():
-            times = v[kBOSS_FIXED_TIME]
-            for time in times:
-                if time not in alarm_dict:
-                    alarm_dict[time] = []
-                alarm_dict[time].append(v[kBOSS_NAME])
-        return alarm_dict
+    # def create_daily_fixed_boss_alarm_dict(self) -> dict:
+    #     '''
+    #     보스정보 dict에서 고정타임 보스에 해당하는 정보를 찾아서 dict로 반환해 준다.
+    #     :return: {"시각":{"alarmed":True|False, "bossList":[보스명리스트]}},, ...}
+    #     '''
+    #     # boss_Dic에서 타입이 고정타입인 것만 추려내서...
+    #     fixed_boss_dict = {k: v for k, v in self.bossDic.items() if v[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED}
+    #     alarm_dict = {} # 고정보스 알람 dict를 만든다.
+    #     for key, bossInfo in fixed_boss_dict.items():
+    #         times = bossInfo[kBOSS_FIXED_TIME] # ["12:00", "22:00"]
+    #         for time in times: # "12:00"
+    #             if time not in alarm_dict:
+    #                 # 이 시간의 알람 dict가 없으면 새로 만들고, 기본 값 세팅
+    #                 alarm_dict[time] = {}
+    #                 alarm_dict[time][kFLD_ALARMED] = False # "alarmed":False
+    #                 alarm_dict[time][kFLD_BOSS_LIST] = [] # "bossList":[]
+    #             alarm_dict[time][kFLD_BOSS_LIST].append(bossInfo[kBOSS_NAME])
+    #     return alarm_dict
 
-    def get_boss_alarm_in_master(self, option: int = cBOSS_TYPE_DAILY_FIXED) -> dict:
-        '''
+    def get_boss_alarm_in_master(self, option: str = cBOSS_TYPE_DAILY_FIXED) -> dict:
+        """
         option으로 넘어온 보스타입에 따라 그에 맞는 alarm dict를 만들어 리턴한다.
         :param option: 보스타입 상수 - cBOSS_TYPE_DAILY_FIXED, cBOSS_TYPE_INTERVAL, cBOSS_TYPE_WEEKDAY_FIXED
         :return:
-        '''
+        {
+        }
+        """
         # self.logger.info(f"{self.bossDic}")
         alarm_dic = {}
-        for key, boss in self.bossDic.items(): # key는 보스키, boss는 firestore 보스 dict
+        for key, boss in self.bossDic.items():  # key는 보스키, boss는 firestore 보스 dict
+            # option으로 넘어온 보스타입이 아닌 경우는 통과
+            if boss[kBOSS_TYPE] != option:
+                continue
+
+
+            # 1. daily fixed
             if boss[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED:
-                boss_fixed_time_list = boss[kBOSS_FIXED_TIME] # 보스가 뜨는 고정시간 목록
-                for boss_fixed_time in boss_fixed_time_list: # 각 고정시간을 key로 하고 값을 보스명 list인 dict 만든다.
+                boss_fixed_time_list = boss[kBOSS_FIXED_TIME]  # 보스가 뜨는 고정시간 목록
+                for boss_fixed_time in boss_fixed_time_list:  # 각 고정시간을 key로 하고 값을 보스명 list인 dict 만든다.
                     if boss_fixed_time not in alarm_dic:
                         alarm_dic[boss_fixed_time] = [boss[kBOSS_NAME]]
                     else:
                         alarm_dic[boss_fixed_time].append(boss[kBOSS_NAME])
-            # elif boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
-            #     # TODO: 3 여기에 성채보스 타입 alarm_dic 만들어야 함
-            #     pass
+            # 2. weekday fixed : al
+            # TODO: 여기서 트레이스 해봐야 함
+            elif boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
+                boss_week_day_info_dic = boss[kBOSS_WEEKDAY_INFO]  # 일주일에 어떤 요일 몇시에 뜨는지 정보가 있는 dict의 리스트
+                for boss_weekday_info in boss_week_day_info_dic:  # 각 요일을 key로 하고 {시간: 보스명리스트}인 dict를 만든다.
+                    str_boss_weekday_no = boss_weekday_info[kBOSS_WEEKDAY]  # 요일번호 문자열(firestore에서 키로 숫자가 안되서...)
+                    if str_boss_weekday_no not in alarm_dic:
+                        alarm_dic[str_boss_weekday_no] = {}
+                    weekday_dic = alarm_dic[str_boss_weekday_no]
+                    boss_fixed_time_list = boss[kBOSS_APPEARANCE_TIME]
+                    for boss_fixed_time in boss_fixed_time_list:
+                        if boss_fixed_time not in weekday_dic:
+                            weekday_dic[boss_fixed_time] = [boss[kBOSS_NAME]]
+                        else:
+                            weekday_dic[boss_fixed_time].append(boss[kBOSS_NAME])
             # elif boss[kBOSS_TYPE] == cBOSS_TYPE_INTERVAL:
             #     # TODO: 3 여기에 인터벌 타입 alarm_dic 만들어야 함
             #     pass
         self.logger.info(alarm_dic)
         return alarm_dic
+
+    def set_guild_alarms(self, discord_guild_id: int, guild_alarm_dic: dict):
+        """
+
+        :param discord_guild_id:
+        :param guild_alarm_dic:
+        :return:
+        """
+        str_discord_guild_id = str(discord_guild_id)
+        try:
+            col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).update({
+                kFLD_ALARMS: guild_alarm_dic
+            })
+        except Exception as e:
+            self.logger.debug(e)
 
     #
     # def delete_boss_collection(self, discord_guild_id, col_ref, batch_size):
