@@ -107,6 +107,6 @@ class Guild(commands.Cog):
         await send_ok_embed(ctx, f"앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
 
 
-async def setup(bot: commands.Bot) -> None:
+async def setup(bot: BtBot) -> None:
     logging.getLogger('cog').info(f"setup Guild Cog")
     await bot.add_cog(Guild(bot))

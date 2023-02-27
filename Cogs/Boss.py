@@ -137,6 +137,6 @@ class Boss(commands.Cog):
         await ctx.reply(f"{cCMD_BOSS_ADD_ALIAS} 구현중...")
 
 
-async def setup(bot: commands.Bot) -> None:
+async def setup(bot: BtBot) -> None:
     logging.getLogger('cog').info(f"setup Boss Cog")
     await bot.add_cog(Boss(bot))

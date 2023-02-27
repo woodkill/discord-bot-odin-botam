@@ -192,54 +192,103 @@ class BtDb():
     #             alarm_dict[time][kFLD_BOSS_LIST].append(bossInfo[kBOSS_NAME])
     #     return alarm_dict
 
-    def get_boss_alarm_in_master(self, option: str = cBOSS_TYPE_DAILY_FIXED) -> dict:
+    def get_daily_fiexed_alarm_info_from_master(self) -> dict:
         """
-        option으로 넘어온 보스타입에 따라 그에 맞는 alarm dict를 만들어 리턴한다.
-        :param option: 보스타입 상수 - cBOSS_TYPE_DAILY_FIXED, cBOSS_TYPE_INTERVAL, cBOSS_TYPE_WEEKDAY_FIXED
+        월보 알람 정보 dic을 만들어서 리턴한다.
         :return:
         {
+          "12:00": [
+            "아우둠라",
+            "발두르",
+            "갸름",
+            "파프니르",
+            "헤임달"
+          ],
+          "22:00": [
+            "아우둠라",
+            "발두르",
+            "갸름",
+            "파프니르",
+            "헤임달"
+          ]
         }
         """
         # self.logger.info(f"{self.bossDic}")
-        alarm_dic = {}
-        for key, boss in self.bossDic.items():  # key는 보스키, boss는 firestore 보스 dict
-            # option으로 넘어온 보스타입이 아닌 경우는 통과
-            if boss[kBOSS_TYPE] != option:
+
+        alarm_dic = {}  # 요기다가 만들어서 리턴한다.
+        for key, boss in self.bossDic.items():  # 각 보스의 정보를 하나씩 가져와서...
+            if boss[kBOSS_TYPE] != cBOSS_TYPE_DAILY_FIXED:
                 continue
+            boss_fixed_time_list = boss[kBOSS_FIXED_TIME]  # 보스가 뜨는 고정시간 목록
+            for str_boss_fixed_time in boss_fixed_time_list:  # 각 고정시간을 key로 하고 값을 보스명 list인 dict 만든다.
+                if str_boss_fixed_time not in alarm_dic:
+                    alarm_dic[str_boss_fixed_time] = [boss[kBOSS_NAME]]
+                else:
+                    alarm_dic[str_boss_fixed_time].append(boss[kBOSS_NAME])
 
+        self.logger.info(alarm_dic)
+        return alarm_dic
 
-            # 1. daily fixed
-            if boss[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED:
-                boss_fixed_time_list = boss[kBOSS_FIXED_TIME]  # 보스가 뜨는 고정시간 목록
-                for boss_fixed_time in boss_fixed_time_list:  # 각 고정시간을 key로 하고 값을 보스명 list인 dict 만든다.
-                    if boss_fixed_time not in alarm_dic:
-                        alarm_dic[boss_fixed_time] = [boss[kBOSS_NAME]]
+    def get_weekday_fiexed_alarm_info_from_master(self) -> dict:
+        """
+        :return:
+        {
+            "1": {
+                "21:30": [
+                    "그로아의사념",
+                    "헤르모드의사념",
+                    "야른의사념",
+                    "굴베이그의사념",
+                    "파프니르의그림자"
+                ]
+            },
+            "3": {
+                "21:30": [
+                    "그로아의사념",
+                    "헤르모드의사념",
+                    "야른의사념",
+                    "굴베이그의사념",
+                    "파프니르의그림자"
+                ]
+            }
+        }
+        """
+        # self.logger.info(f"{self.bossDic}")
+
+        alarm_dic = {}  # 요기다가 만들어서 리턴한다.
+        for key, boss in self.bossDic.items():  # 각 보스의 정보를 하나씩 가져와서...
+            if boss[kBOSS_TYPE] != cBOSS_TYPE_WEEKDAY_FIXED:
+                continue
+            boss_week_day_info_dic = boss[kBOSS_WEEKDAY_INFO]  # 일주일에 어떤 요일 몇시에 뜨는지 정보가 있는 dict의 리스트
+            for boss_weekday_info in boss_week_day_info_dic:  # 각 요일을 key로 하고 {시간: 보스명리스트}인 dict를 만든다.
+                str_boss_weekday_no = boss_weekday_info[kBOSS_WEEKDAY]  # 요일번호 문자열(firestore에서 키로 숫자가 안되서...)
+                if str_boss_weekday_no not in alarm_dic:
+                    alarm_dic[str_boss_weekday_no] = {}
+                weekday_dic = alarm_dic[str_boss_weekday_no]
+                boss_fixed_time_list = boss_weekday_info[kBOSS_APPEARANCE_TIME]
+                for boss_fixed_time in boss_fixed_time_list:
+                    if boss_fixed_time not in weekday_dic:
+                        weekday_dic[boss_fixed_time] = [boss[kBOSS_NAME]]
                     else:
-                        alarm_dic[boss_fixed_time].append(boss[kBOSS_NAME])
-            # 2. weekday fixed : al
-            # TODO: 여기서 트레이스 해봐야 함
-            elif boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
-                boss_week_day_info_dic = boss[kBOSS_WEEKDAY_INFO]  # 일주일에 어떤 요일 몇시에 뜨는지 정보가 있는 dict의 리스트
-                for boss_weekday_info in boss_week_day_info_dic:  # 각 요일을 key로 하고 {시간: 보스명리스트}인 dict를 만든다.
-                    str_boss_weekday_no = boss_weekday_info[kBOSS_WEEKDAY]  # 요일번호 문자열(firestore에서 키로 숫자가 안되서...)
-                    if str_boss_weekday_no not in alarm_dic:
-                        alarm_dic[str_boss_weekday_no] = {}
-                    weekday_dic = alarm_dic[str_boss_weekday_no]
-                    boss_fixed_time_list = boss[kBOSS_APPEARANCE_TIME]
-                    for boss_fixed_time in boss_fixed_time_list:
-                        if boss_fixed_time not in weekday_dic:
-                            weekday_dic[boss_fixed_time] = [boss[kBOSS_NAME]]
-                        else:
-                            weekday_dic[boss_fixed_time].append(boss[kBOSS_NAME])
-            # elif boss[kBOSS_TYPE] == cBOSS_TYPE_INTERVAL:
-            #     # TODO: 3 여기에 인터벌 타입 alarm_dic 만들어야 함
-            #     pass
+                        weekday_dic[boss_fixed_time].append(boss[kBOSS_NAME])
+
+        self.logger.info(alarm_dic)
+        return alarm_dic
+
+    def get_interval_alarm_info_from_master(self) -> dict:
+        """
+
+        :return:
+        """
+
+        # TODO: 여기에 인터벌 타입 alarm_dic 만들어야 함
+        self.logger.info(alarm_dic)
+
         self.logger.info(alarm_dic)
         return alarm_dic
 
     def set_guild_alarms(self, discord_guild_id: int, guild_alarm_dic: dict):
         """
-
         :param discord_guild_id:
         :param guild_alarm_dic:
         :return:
