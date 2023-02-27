@@ -58,6 +58,19 @@ class BtDb():
         self.logger.info(r)
         return len(r) != 0
 
+    def check_valid_boss_name(self, arg_boss_name: str) -> bool:
+        """
+        존재하는 보스명인
+        :param arg_boss_name:
+        :return: True, False
+        """
+        for key, boss in self.bossDic.items():
+            boss_name = boss[kBOSS_NAME]
+            boss_alias_list = boss[kBOSS_ALIAS]
+            if arg_boss_name == boss_name or arg_boss_name in boss_alias_list:
+                return True
+        return False
+
     def get_odin_guild_info(self, discord_guild_id: int) -> (bool, dict):
         """
         {discord_guild_id}로 등록된 길드 정보(오딘서버명, 길드명)을 쿼리하여 리턴한다.

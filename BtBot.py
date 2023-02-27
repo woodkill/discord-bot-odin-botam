@@ -73,6 +73,12 @@ class BtBot(commands.Bot):
         await self.process_commands(message)
 
     def is_ready_commands(self, msg: str, prefix: str) -> bool:
+        """
+
+        :param msg:
+        :param prefix:
+        :return:
+        """
         # self.logger.info(msg)
         cmd = msg.split()[0][len(prefix):]
         if cmd not in cUsageDic:

@@ -95,7 +95,13 @@ class Guild(commands.Cog):
 
     @commands.command(name=cCMD_GUILD_REGISTER_CHANNEL)
     async def register_alarm_channel(self, ctx: commands.Context) -> None:
+        """
+
+        :param ctx:
+        :return:
+        """
         self.logger.info(f"{cCMD_GUILD_REGISTER_CHANNEL}")
+
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
             await send_guide_message(ctx, cMSG_REGISTER_GUILD_FIRST)
