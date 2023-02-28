@@ -20,6 +20,7 @@ kFLD_SERVER_NAME = u'serverName'
 kFLD_GUILD_NAME = u'guildName'
 kFLD_CHANNEL_ID = u'channelId'
 kFLD_ALARMS = u"alarms"
+kFLD_ALARM_TIMERS = u"alarmTimers"
 kFLD_ALARMED = u"alarmed"
 kFLD_BOSS_LIST = u"bossList"
 

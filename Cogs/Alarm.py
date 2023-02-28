@@ -2,6 +2,7 @@ import asyncio
 import json
 import datetime
 from discord.ext import tasks
+
 # from discord import Interaction
 # from discord import Object
 from common import *
@@ -10,9 +11,10 @@ from const_key import *
 import BtBot
 import BtDb
 
-cCHECK_ALARM_INTERVAL_SECONDS = 5
+cCHECK_ALARM_INTERVAL_SECONDS = 1
 
 cTIME_FORMAT_FIXED_TYPE = "%H:%M"
+cTIME_FORMAT_INTERVAL_TYPE = "%Y-%m-%d %H:%M:%S"
 
 
 class Alarm(commands.Cog):
@@ -36,10 +38,49 @@ class Alarm(commands.Cog):
     async def on_ready(self) -> None:
         self.logger.info(f"Alarm Cog loaded.")
 
+    @commands.command(name=cCMD_ALARM_TIMER)
+    async def alram_timers(self, ctx: commands.Context, *args) -> None:
+        """
+        보스 출현 몇 분 전마다 알람을 받을 지 설정합니다.
+        :param ctx:
+        :return:
+        """
+        # TODO: 구현해야 함
+        logging.info(f"{cCMD_ALARM_TIMER}")
+
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await send_guide_message(ctx, cMSG_REGISTER_GUILD_FIRST)
+            return
+
+        # 비정상 상태 체크
+        if ctx.guild.id not in self.bot.odin_guilds_dic:
+            await send_error_message(ctx, cMSG_NO_GUILD_INFO)
+            return
+
+        # 명령어 형식이 맞는지 검사
+        if len(args) < 1:  # 인자가 1개 이상 이어야 함
+            await send_usage_embed(ctx, cCMD_ALARM_TIMER)
+            return
+
+        # 분은 모두 숫자 이어야 하고 60 이하이어야 한다.
+        try:
+            min_list = [int(k) for k in args if int(k) <= 60]
+        except ValueError:
+            await send_error_message(ctx, u"숫자만 입력하세요.")
+            return
+
+        min_list = sorted(min_list, reverse=True)
+        self.db.set_guild_alarm_timers(ctx.guild.id, min_list)
+
+        str_min_list = f"분, ".join(min_list)
+        message = f"보스출현 {str_min_list}전에 알람을 보내드립니다."
+        await send_ok_message(ctx, message)
+
     @commands.command(name=cCMD_ALARM_LIST)
     async def alarm_list(self, ctx: commands.Context) -> None:
         """
-
+        현재 설정되어 있는 알람 목록을 보여줍니다.
         :param ctx:
         :return:
         """
@@ -81,7 +122,7 @@ class Alarm(commands.Cog):
                 color=discord.Color.blue())
 
             for str_time, boss_list in sorted(guild_daily_fixed_alarm_dic.items()):
-                daily_fixed_embed.add_field(name=str_time, value=', '.join(boss_list), inline=False)
+                daily_fixed_embed.add_field(name=str_time, value=', '.join(boss_list), inline=True)
 
             embed_list.append(daily_fixed_embed)
 
@@ -103,8 +144,8 @@ class Alarm(commands.Cog):
                 str_weekday = cWEEKDAYS[int(str_weekday_no)]
                 message = ""
                 for t, b in time_alarm_dic.items():
-                    message += f"{t} : {', '.join(b)}\n"
-                    weekday_fixed_embed.add_field(name=str_weekday, value=message, inline=False)
+                    message += f"{', '.join(b)}\n"
+                    weekday_fixed_embed.add_field(name=f"{str_weekday} {t}", value=message, inline=True)
 
             embed_list.append(weekday_fixed_embed)
 
@@ -133,7 +174,7 @@ class Alarm(commands.Cog):
 
             for str_interval_boss_time, interval_boss_name_list in dict(sorted(guild_interval_alarm_dic.items())).items():
                 for boss_name in interval_boss_name_list:
-                    interval_boss_embed.add_field(name=boss_name, value=str_interval_boss_time, inline=False)
+                    interval_boss_embed.add_field(name=boss_name, value=str_interval_boss_time, inline=True)
 
             embed_list.append(interval_boss_embed)
 
@@ -216,7 +257,7 @@ class Alarm(commands.Cog):
         d, h, m, s = get_separated_timedelta_korean(str_remained_time)
         td = datetime.timedelta(days=d, hours=h, minutes=m, seconds=s)
         boss_time = now + td
-        alarm_key = boss_time.strftime("'%Y-%m-%d %H:%M:%S'")
+        alarm_key = boss_time.strftime(cTIME_FORMAT_INTERVAL_TYPE)
 
         if alarm_key not in guild_interval_alarm_dic:
             guild_interval_alarm_dic[alarm_key] = [str_boss_name]
@@ -229,7 +270,7 @@ class Alarm(commands.Cog):
         # 서버 DB에 길드의 알람설정 상태 덮어쓰기
         self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
 
-        await send_ok_message(ctx, f"{str_boss_name} : {alarm_key}에 알람 설정되었습니다.")
+        await send_ok_message(ctx, f"{str_boss_name} : {alarm_key} 알람 설정되었습니다.")
 
     @commands.command(name=cCMD_ALARM_DAILY_FIXED_ONOFF)
     async def onoff_daily_fixed_alarm(self, ctx: commands.Context) -> None:
@@ -506,17 +547,17 @@ class Alarm(commands.Cog):
                 time_diff_seconds = (alarm_datetime - now).total_seconds()
                 # self.logger.info(f"{time_diff_seconds}")
 
+                # str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 고정타임 보스목록
+
                 if time_diff_seconds < 0:  # 이 얘기는 이미 보스가 뜨는 시간이 지나갔다는 얘기
                     # self.logger.info(f"보스가 이미 잡혔습니다.")
                     pass
 
                 elif time_diff_seconds <= cCHECK_ALARM_INTERVAL_SECONDS:
-                    # str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 고정타임 보스목록
-                    self.logger.info(f"{now} : 보스알람을 울려야 합니다.")
+                    # self.logger.info(f"{now} : 보스알람을 울려야 합니다.")
                     await channel.send(f"{cCMD_ALARM_DAILY_FIXED_ONOFF} 출현 시간입니다.", tts=True)
 
                 else:  # time_diff_seconds > cCHECK_ALARM_INTERVAL_SECONDS
-                    # str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 고정타임 보스목록
                     rh = round(time_diff_seconds // 3600)
                     rm = round((time_diff_seconds // 60) % 60)
                     rs = round(time_diff_seconds % 60)
@@ -548,17 +589,17 @@ class Alarm(commands.Cog):
                     time_diff_seconds = (alarm_datetime - now).total_seconds()
                     # self.logger.info(f"{time_diff_seconds}")
 
+                    # str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 고정타임 보스목록
+
                     if time_diff_seconds < 0:  # 이 얘기는 이미 보스가 뜨는 시간이 지나갔다는 얘기
                         # self.logger.info(f"보스가 이미 잡혔습니다.")
                         pass
 
                     elif time_diff_seconds <= cCHECK_ALARM_INTERVAL_SECONDS:
-                        # str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 고정타임 보스목록
-                        self.logger.info(f"{now} : 보스알람을 울려야 합니다.")
+                        # self.logger.info(f"{now} : 보스알람을 울려야 합니다.")
                         await channel.send(f"{cCMD_ALARM_DAILY_FIXED_ONOFF} 출현 시간입니다.", tts=True)
 
                     else:  # time_diff_seconds > cCHECK_ALARM_INTERVAL_SECONDS
-                        # str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 고정타임 보스목록
                         rh = round(time_diff_seconds // 3600)
                         rm = round((time_diff_seconds // 60) % 60)
                         rs = round(time_diff_seconds % 60)
@@ -567,6 +608,54 @@ class Alarm(commands.Cog):
                             f"{rh:02}:{rm:02}:{rs:02} - {cCMD_ALARM_WEEKDAY_FIXED_ONOFF}")  # {str_alarm_time}
 
             # 3. 인터벌 보스
+            """
+                    {
+                        "'2023-02-28 01:24:27'": [
+                            "굴베이그"
+                            ]
+                    }
+                    """
+            try:
+                guild_interval_alarm_dic = guild_alarm_dic[cBOSS_TYPE_INTERVAL]
+            except KeyError:
+                guild_interval_alarm_dic = {}
+
+            # 이미 지나갔거나 알람문자를 보낸 알람 시간은 지워야 하므로 for문이 다 지난 다음 지운다.
+            # 그 지울 알람 키를 저장해 둘 리스트
+            to_remove = []
+
+            for str_alarm_time, boss_list in guild_interval_alarm_dic.items():
+
+                # '2023-02-28 01:24:27' 형태로 저장되어 있음.
+                alarm_datetime = datetime.datetime.strptime(str_alarm_time, cTIME_FORMAT_INTERVAL_TYPE)
+                # self.logger.info(f"alarm_datetime: {alarm_datetime}")
+
+                # 현재 시각과 보스가 뜨는 시각의 차이
+                time_diff_seconds = (alarm_datetime - now).total_seconds()
+                # self.logger.info(f"{time_diff_seconds}")
+
+                str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 보스목록
+
+                if time_diff_seconds < 0:  # 이 얘기는 이미 보스가 뜨는 시간이 지나갔다는 얘기
+                    self.logger.info(f"보스가 이미 잡혔습니다.")
+                    to_remove.append(str_alarm_time)
+
+                elif time_diff_seconds <= cCHECK_ALARM_INTERVAL_SECONDS:
+                    # self.logger.info(f"{now} : 보스알람을 울려야 합니다.")
+                    await channel.send(f"{str_boss_list} 출현 시간입니다.", tts=True)
+                    to_remove.append(str_alarm_time)
+
+                else:  # time_diff_seconds > cCHECK_ALARM_INTERVAL_SECONDS
+                    rh = round(time_diff_seconds // 3600)
+                    rm = round((time_diff_seconds // 60) % 60)
+                    rs = round(time_diff_seconds % 60)
+                    # self.logger.info(f"보탐시간과의 차이 : {rh:02}:{rm:02}:{rs:02}")
+                    self.logger.info(f"{rh:02}:{rm:02}:{rs:02} - {str_boss_list}")  # {str_alarm_time}
+
+            # 인터벌 타입 보스는 알람 목록에서 지워야 한다.
+            for alarm_key in to_remove:
+                guild_interval_alarm_dic.pop(alarm_key)
+                self.db.set_guild_alarms(guild_id, guild_alarm_dic)
 
     # ------------ End of : async def do_check_alarm(self) ------------
 
@@ -587,8 +676,6 @@ class Alarm(commands.Cog):
         # self.logger.info(f"after_send_message")
         if self.check_alarms.is_being_cancelled() and True:
             pass
-            # TODO: alarm dic에 데이타가 남아 있으면 서버에 업로드하는 과정?
-
 
 async def setup(bot: BtBot) -> None:
     logging.getLogger('cog').info(f"setup Alarm Cog")

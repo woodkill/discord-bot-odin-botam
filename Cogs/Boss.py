@@ -109,34 +109,6 @@ class Boss(commands.Cog):
         embed.add_field(name="출현", value=str_boss_apperance, inline=False)
         await ctx.send(file=file, embed=embed)
 
-    @commands.command(name=cCMD_BOSS_ADD_ALIAS)
-    async def register_alias_boss(self, ctx: commands.Context, *args) -> None:
-        '''
-        TODO : 3 이 봇을 여러개의 길드가 사용할 경우 추가한 보스별명이 다른 길드에는 영향이 가지 않도록 구현해야 한다. 다시 생각해 보도록...
-        :param ctx: Context
-        :param args:
-        :return:
-        '''
-        self.logger.info(f"{cCMD_BOSS_ADD_ALIAS} {args}")
-        # 먼저 길드등록이 되어 있는 지 검사
-        if not self.bot.is_guild_registerd(ctx.guild.id):
-            await send_guide_message(ctx, cMSG_REGISTER_GUILD_FIRST)
-            return
-        # 명령어 형식이 맞는지 검사
-        if len(args) != 2:
-            await send_usage_embed(ctx, cCMD_BOSS_ADD_ALIAS, additional=f"추가할 별명은 기존에 사용하고 있지 않아야 합니다.")
-            return
-        self.logger.debug(f"{cCMD_BOSS_ADD_ALIAS} 명령어 갯수 통과")
-        # 앞의 보스명은 보스명이나 별명에 있어야 하고 뒤의 보스별명은 기존에 없어야 한다.
-        # TODO: 3 마저 구현해야 한다.
-        str_exist_boss_name = args[0]
-        boss_key, exist_boss_dic = self.db.get_boss_item_by_name(str_exist_boss_name)
-
-        str_new_boss_alias = args[1]
-
-        await ctx.reply(f"{cCMD_BOSS_ADD_ALIAS} 구현중...")
-
-
 async def setup(bot: BtBot) -> None:
     logging.getLogger('cog').info(f"setup Boss Cog")
     await bot.add_cog(Boss(bot))

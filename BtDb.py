@@ -107,7 +107,11 @@ class BtDb():
         # self.logger.info(f"{odin_guilds_dic}")
         return True, odin_guilds_dic
 
-    def set_odin_guild_info(self, discord_guild_id: int, channel_id: int, odin_server_name: str, odin_guild_name: str) -> bool:
+    def set_odin_guild_info(self,
+                            discord_guild_id: int,
+                            channel_id: int,
+                            odin_server_name: str,
+                            odin_guild_name: str) -> (bool, dict):
         """
         {discord_guild_id}를 document명으로 하여 길드정보를 서버DB에 저장한다.
         :param discord_guild_id: 명령어를 접수한 디코 서버 id
@@ -117,17 +121,19 @@ class BtDb():
         :return: 성공여부
         """
         str_discord_guild_id = str(discord_guild_id)
-        try:
-            col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set({
+        guild_info = {
                 kFLD_SERVER_NAME: odin_server_name,
                 kFLD_GUILD_NAME: odin_guild_name,
                 kFLD_CHANNEL_ID: channel_id,
-                kFLD_ALARMS: {}
-                }, merge=True)
+                kFLD_ALARMS: {},
+                kFLD_ALARM_TIMERS: cLIST_DEFAULT_TIMERS
+                }
+        try:
+            col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set(guild_info, merge=True)
         except Exception as e:
             self.logger.debug(e)
-            return False
-        return True
+            return False, None
+        return True, guild_info
 
     def remove_odin_guild_info(self, discord_guild_id: int):
         str_discord_guild_id = str(discord_guild_id)
@@ -288,18 +294,6 @@ class BtDb():
         self.logger.info(alarm_dic)
         return alarm_dic
 
-    def get_interval_alarm_info_from_master(self) -> dict:
-        """
-
-        :return:
-        """
-
-        # TODO: 여기에 인터벌 타입 alarm_dic 만들어야 함
-        self.logger.info(alarm_dic)
-
-        self.logger.info(alarm_dic)
-        return alarm_dic
-
     def set_guild_alarms(self, discord_guild_id: int, guild_alarm_dic: dict):
         """
         :param discord_guild_id:
@@ -310,6 +304,21 @@ class BtDb():
         try:
             col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).update({
                 kFLD_ALARMS: guild_alarm_dic
+            })
+        except Exception as e:
+            self.logger.debug(e)
+
+    def set_guild_alarm_timers(self, discord_guild_id: int, guild_alarm_timers: list):
+        """
+
+        :param discord_guild_id:
+        :param guild_alarm_timers:
+        :return:
+        """
+        str_discord_guild_id = str(discord_guild_id)
+        try:
+            col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).update({
+                kFLD_ALARM_TIMERS: guild_alarm_timers
             })
         except Exception as e:
             self.logger.debug(e)
