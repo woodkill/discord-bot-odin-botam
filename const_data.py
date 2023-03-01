@@ -29,6 +29,7 @@ cCMD_ALARM_TIMER = u"알람간격"
 cCMD_ALARM_DAILY_FIXED_ONOFF = u"월보"
 cCMD_ALARM_WEEKDAY_FIXED_ONOFF = u"성채"
 cCMD_ALARM_REGISTER = u"필보"
+cCMD_ALARM_TIMETABLE = u"시간표"
 
 cCMD_PARAM_OFF = u"끄기"
 
@@ -38,10 +39,11 @@ cUsageDic = {
     cCMD_GUILD_REGISTER_CHANNEL:    {kCMD_USAGE: f"{cCMD_GUILD_REGISTER_CHANNEL}", kCMD_EXPLANATION: u"이 채널을 봇이 주는 알람용 채널로 설정"},
     cCMD_BOSS_INFO:                 {kCMD_USAGE: f"{cCMD_BOSS_INFO} ***[보스(별)명]***", kCMD_EXPLANATION: u"지목한 보스의 정보 또는 전체 목록"},
     cCMD_ALARM_LIST:                {kCMD_USAGE: f"{cCMD_ALARM_LIST}", kCMD_EXPLANATION: u"현재 설정되어 있는 알람 목록"},
-    cCMD_ALARM_TIMER:               {kCMD_USAGE: f"{cCMD_ALARM_TIMER} ***[분 분 분 ...]***", kCMD_EXPLANATION: u"보스 몇분전에 알람을 받을지 나열합니다.\n분은 최소 1개 이상이어야 하고 60 이하이어야 합니다.."},
+    cCMD_ALARM_TIMER:               {kCMD_USAGE: f"{cCMD_ALARM_TIMER} ***[분 분 분 ...]***", kCMD_EXPLANATION: u"보스출현 몇분 전에 알람을 받을지 지정합니다(여러개 가능)"},
     cCMD_ALARM_DAILY_FIXED_ONOFF:   {kCMD_USAGE: f"{cCMD_ALARM_DAILY_FIXED_ONOFF}", kCMD_EXPLANATION: f"{cCMD_ALARM_DAILY_FIXED_ONOFF} 알람 ON / OFF"},
     cCMD_ALARM_WEEKDAY_FIXED_ONOFF: {kCMD_USAGE: f"{cCMD_ALARM_WEEKDAY_FIXED_ONOFF}", kCMD_EXPLANATION: f"{cCMD_ALARM_WEEKDAY_FIXED_ONOFF} 알람 ON / OFF"},
     cCMD_ALARM_REGISTER:            {kCMD_USAGE: f"{cCMD_ALARM_REGISTER} ***보스명 [남은시간|끄기]***", kCMD_EXPLANATION: f"{cCMD_ALARM_REGISTER} 알람 추가/삭제"},
+    cCMD_ALARM_TIMETABLE:           {kCMD_USAGE: f"{cCMD_ALARM_TIMETABLE}", kCMD_EXPLANATION: f"보스 시간표 이미지 첨부로 알람시간 자동인식"},
 }
 
 '''
@@ -52,4 +54,8 @@ cMSG_NO_GUILD_INFO = u"길드정보가 없습니다."
 cMSG_NO_EXISTING_CMD = "그런 명령어는 없습니다."
 
 cLIST_DEFAULT_TIMERS = [15, 5, 1]
+
+'''
+'''
+cOCR_IGNORE_NAMES = ['현재 시간', '노른의 시간표', '미드가르드', '요툰하임', '니다벨리르', '던전', '거점 지배자', '절대자', '대륙 침략자', '발할라 대전']
 

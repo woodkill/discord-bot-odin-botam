@@ -5,7 +5,7 @@ import logging
 from const_data import *
 
 
-class BtDb():
+class BtDb:
 
     def __init__(self):
         # Use a service account.

@@ -288,3 +288,7 @@ cython_debug/
 # firebase
 ./firebase.json
 
+# 임시
+.temp
+
+

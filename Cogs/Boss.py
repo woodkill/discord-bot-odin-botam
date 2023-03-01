@@ -49,10 +49,13 @@ class Boss(commands.Cog):
             if boss_list is None:
                 await send_error_message(ctx, f"보스정보가 없습니다. 관리자에게 문의하세요.")
             embed = discord.Embed(title=f"보스목록", description=f"모든 보스의 간략한 정보입니다.", color=discord.Color.purple())
+            # temp_boss_list = []  # 보스명 리스트 콘솔창에 출력용
             for boss in boss_list:
+                # temp_boss_list.append(boss[kBOSS_NAME])  # 보스명 리스트 콘솔창에 출력용
                 str_boss_alias = ",".join(boss[kBOSS_ALIAS])
                 embed.add_field(name=boss[kBOSS_NAME],
-                                value=f"{boss[kCHAP_NAME]} / {boss[kBOSS_LEVEL]}\n별명 : {str_boss_alias}", inline=False)
+                                value=f"{boss[kCHAP_NAME]} / {boss[kBOSS_LEVEL]}\n별명 : {str_boss_alias}", inline=True)
+            # self.logger.info(temp_boss_list)  # 보스명 리스트 콘솔창에 출력용
             await ctx.send(embed=embed)
             return
 

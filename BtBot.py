@@ -68,7 +68,7 @@ class BtBot(commands.Bot):
         if not message.content.startswith(self.command_prefix): # 명령어가 아닌 경우 무시
             return
         if not self.is_ready_commands(message.content, self.command_prefix): # 명령어 형식이지만 명령어 목록에 없으면...
-            await message.channel.send(to_guide_code_block(f"{cMSG_NO_EXISTING_CMD}\n{self.command_prefix}{cCMD_GUILD_HELP} 해보세요"))
+            await message.channel.send(to_guide_code_block(f"{cMSG_NO_EXISTING_CMD}. '{self.command_prefix}{cCMD_GUILD_HELP}'로 명령어 목록을 참고하세요"))
             return
         await self.process_commands(message)
 

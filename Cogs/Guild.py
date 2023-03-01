@@ -69,9 +69,9 @@ class Guild(commands.Cog):
         if len(args) == 0:  # 길드확인용으로 쓰이는 경우
             success, odin_guild_dic = self.db.get_odin_guild_info(ctx.guild.id)
             if not success:
-                await send_error_embed(ctx, f"등록된 길드가 없습니다.")
+                await send_error_message(ctx, f"등록된 길드가 없습니다.")
                 return
-            await send_ok_embed(ctx, f"{odin_guild_dic[kFLD_SERVER_NAME]} / {odin_guild_dic[kFLD_GUILD_NAME]}")
+            await send_ok_embed(ctx, f"이 디코서버는 {odin_guild_dic[kFLD_SERVER_NAME]} / {odin_guild_dic[kFLD_GUILD_NAME]} 길드로 등록되어 있습니다.")
             return
 
         # 여기부터 인자가 2개 들어온 경우
@@ -79,14 +79,13 @@ class Guild(commands.Cog):
         odin_guild_name = args[1]
 
         if not self.db.check_valid_server_name(odin_server_name):
-            await send_guide_message(ctx, f"'{odin_server_name}' : 올바른 오딘서버명이 아닙니다")
+            await send_error_message(ctx, f"'{odin_server_name}' : 올바른 오딘서버명이 아닙니다")
             return
         success, guild_info = self.db.set_odin_guild_info(ctx.guild.id, ctx.channel.id, odin_server_name, odin_guild_name)
         if not success:
             await send_error_message(ctx, f"길드등록에 실패하였습니다.")
             return
         self.bot.update_guild_info(ctx.guild.id, guild_info)
-        # await send_ok_embed(ctx, f"길드등록 완료 : {odin_server_name}/{odin_guild_name}", additional=f"앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
         await send_ok_message(ctx, f"길드등록 완료 : {odin_server_name} / {odin_guild_name}\n앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
 
     @commands.command(name=cCMD_GUILD_REGISTER_CHANNEL)
@@ -106,7 +105,7 @@ class Guild(commands.Cog):
         if not success:
             await send_error_message(ctx, f"{cCMD_GUILD_REGISTER_CHANNEL} 실패하였습니다.")
             return
-        await send_ok_embed(ctx, f"앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
+        await send_ok_message(ctx, f"앞으로 오딘보탐의 알람은 이 채널을 이용합니다.")
 
 
 async def setup(bot: BtBot) -> None:
