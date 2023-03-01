@@ -4,17 +4,18 @@ import numpy as np
 import math
 import difflib
 
-
 '''
 pip3 install opencv-python
 pip3 install easyocr
 '''
 
 
-'''
-원본 이미지에서 특정 영역의 색상값만 남기고 나머지 영역은 삭제
-'''
 def remove_background(file_name):
+    """
+    원본 이미지에서 특정 영역의 색상값만 남기고 나머지 영역은 삭제
+    :param file_name:
+    :return:
+    """
     image = cv2.imread(file_name)
     # image는 RGB 채널이 아니라 BGR 채널임 (opencv 디폴트 채널 순서)
 
@@ -53,12 +54,15 @@ def remove_background(file_name):
 
     return result
 
-'''
-easyocr 을 이용해 이미지에서 한글 텍스트를 출력.
-출력된 결과물 중 confidence값이 0.15 미만인 결과는 삭제.
-디텍트 되는 결과물 중 원하는 텍스트가 없다면, confidence 값 조절 가능.
-'''
+
 def read_text(image):
+    """
+    easyocr 을 이용해 이미지에서 한글 텍스트를 출력.
+    출력된 결과물 중 confidence값이 0.15 미만인 결과는 삭제.
+    디텍트 되는 결과물 중 원하는 텍스트가 없다면, confidence 값 조절 가능.
+    :param image:
+    :return:
+    """
     reader = easyocr.Reader(['ko'])
     raw_result = reader.readtext(image)
 
@@ -75,15 +79,20 @@ def read_text(image):
 
     return filtered
 
-'''
-단어의 유사도 측정
-자카드 방식 (원하는 결과가 잘 나오지 않으면, 다른 유사도 측정 방식으로 변경 가능)
-https://blog.naver.com/dsgsengy/222801301771
-'''
+
 def jaccard_similarity(list1, list2):
+    """
+    단어의 유사도 측정
+    자카드 방식 (원하는 결과가 잘 나오지 않으면, 다른 유사도 측정 방식으로 변경 가능)
+    https://blog.naver.com/dsgsengy/222801301771
+    :param list1:
+    :param list2:
+    :return:
+    """
     s1 = set(list1)
     s2 = set(list2)
     return float(len(s1.intersection(s2)) / len(s1.union(s2)))
+
 
 def bytes_similarity(list1, list2):
     list1_bytes = list(bytes(''.join(list1), 'utf-8'))
@@ -93,6 +102,7 @@ def bytes_similarity(list1, list2):
     similarity = sm.ratio()
     
     return similarity
+
 
 def delete_invalid_names(text_results):
     ignore_names = ['현재 시간', '노른의 시간표', '미드가르드', '요툰하임', '니다벨리르', '알브하임', '무스펠하임', \
@@ -121,12 +131,14 @@ def delete_invalid_names(text_results):
     return new_results
             
 
-'''
-보스 이름을 정확한 이름으로 변환
-일반적이지 않은 이름이라 한두글자씩 틀리게 인식됨.
-정확한 이름을 리스트에 넣은 후, 인식된 이름과 가장 유사한 정확한 보스 이름 선정
-'''
 def find_boss_name(origin_name):
+    """
+    보스 이름을 정확한 이름으로 변환
+    일반적이지 않은 이름이라 한두글자씩 틀리게 인식됨.
+    정확한 이름을 리스트에 넣은 후, 인식된 이름과 가장 유사한 정확한 보스 이름 선정
+    :param origin_name:
+    :return:
+    """
     boss_names = ['혼돈의마수굴베이그', '혼돈의사제강글로티', '분노의모네가름', '나태의드라우그', '그로아의사념', '헤르모드의사념', '야른의사념', '굴베이그의사념', \
                   '파프니르의그림자', '그로아', '칼바람하피', '매트리악', '레라드', '탕그뇨스트', '갸름', '티르', '파르바', '셀로비아', '흐니르', '페티', '바우티', \
                   '니드호그', '야른', '발두르', '토르', '라이노르', '비요른', '헤르모드', '스칼라니르', '브륀힐드', '라타토스크', '수드리', '파프니르', '오딘', '스바르트',\
@@ -151,10 +163,15 @@ def find_boss_name(origin_name):
     # 가장 유사한 이름과의 유사도가 0.55 미만이라면 무시 (예를 들면, '5시간 37분 남음' 같은 것들)
     return boss_names[max_index] if max_similarity >= 0.55 else None
 
-'''
-가장 가까운 글자 박스 검출
-'''
+
 def get_nearest_box_index(text_results, base_index, vertical_weight):
+    """
+
+    :param text_results:
+    :param base_index:
+    :param vertical_weight:
+    :return:
+    """
     nearest_index = -1
     nearest_distance = 1000000
     for i in range(len(text_results)):
@@ -171,10 +188,13 @@ def get_nearest_box_index(text_results, base_index, vertical_weight):
 
     return nearest_index
 
-'''
-현재 시간 추출
-'''
+
 def find_current_time(text_results):
+    """
+    현재 시간 추출
+    :param text_results:
+    :return:
+    """
     current_time_text = list('현재 시간')
     for i in range(len(text_results)):
         text = list(text_results[i][1])
@@ -189,31 +209,41 @@ def find_current_time(text_results):
 
     return None
 
-'''
-두점의 거리 계산
-'''
+
 def distance_boxes(box1, box2):
+    """
+    두점의 거리 계산
+    :param box1:
+    :param box2:
+    :return:
+    """
     center1 = [(box1[1][0] - box1[0][0]) / 2 + box1[0][0], (box1[1][1] - box1[0][1]) / 2 + box1[0][1]]
     center2 = [(box2[1][0] - box2[0][0]) / 2 + box2[0][0], (box2[1][1] - box2[0][1]) / 2 + box2[0][1]]
 
     return math.sqrt((center2[0] - center1[0])**2 + (center2[1] - center1[1])**2)
 
 
-'''
-y축에 대한 거리 계산
-'''
 def vertical_distance_boxes(box1, box2):
+    """
+    y축에 대한 거리 계산
+    :param box1:
+    :param box2:
+    :return:
+    """
     center1 = (box1[1][1] - box1[0][1]) / 2 + box1[0][1]
     center2 = (box2[1][1] - box2[0][1]) / 2 + box2[0][1]
 
     return abs(center1 - center2)
 
-'''
-보스 이름과 매칭되는 남은 시간을 찾는 함수
-이미지상 보스 이름과 해당 보스의 남은 시간이 서로 가장 가깝게 위치함.
-find_boss_name()에서 보스 이름이 나왔다고 하면, 그것과 가장 가까운 텍스트 영역을 찾음. 텍스트 디텍트가 제대로 되었다면, 아마도 남은 시간일 것
-'''
+
 def mapping(text_results):
+    """
+    보스 이름과 매칭되는 남은 시간을 찾는 함수
+    이미지상 보스 이름과 해당 보스의 남은 시간이 서로 가장 가깝게 위치함.
+    find_boss_name()에서 보스 이름이 나왔다고 하면, 그것과 가장 가까운 텍스트 영역을 찾음. 텍스트 디텍트가 제대로 되었다면, 아마도 남은 시간일 것
+    :param text_results:
+    :return:
+    """
     mapped_data = []
     for i in range(len(text_results)):
         boss_name = find_boss_name(text_results[i][1])
@@ -229,28 +259,60 @@ def mapping(text_results):
     return mapped_data
 
 
+def get_ocr_boss_time_list_by_file(file_path: str) -> (str, list):
+    """
 
-# 이미지에서 관심있는 영역만 남김
-# image = remove_background('./o.png')
-# image = remove_background('./o2.png')
-# image = remove_background('./o3.png')
-# image = remove_background('./o4.png')
-# image = remove_background('./o5.png')
-# image = remove_background('./o6.png')
-image = remove_background('./o7.png')
+    :param file_path:
+    :return:
+    """
 
-# OCR 수행
-text_results = read_text(image)
+    # 이미지에서 관심있는 영역만 남김
+    image = remove_background(file_path)
 
-#print(text_results)
+    # OCR 수행
+    text_results = read_text(image)
 
-# OCR로 추출된 텍스트들의 관계 정리
-current_time = find_current_time(text_results)
-print('현재 시간: ', current_time)
+    #print(text_results)
 
-text_results = delete_invalid_names(text_results)
+    # 이미지 좌상단 현재 시간 추출
+    current_time = find_current_time(text_results)
+    # print('현재 시간: ', current_time)
 
-#print(text_results)
+    # OCR로 추출된 텍스트들의 관계 정리
+    text_results = delete_invalid_names(text_results)
+    #print(text_results)
+    final_results = mapping(text_results)
+    # print(final_results)
 
-final_results = mapping(text_results)
-print(final_results)
+    return current_time, final_results
+
+
+def get_ocr_boss_time_list_by_bytes(image_bytes: bytes) -> (str, list):
+    """
+
+    :param image_bytes:
+    :return:
+    """
+
+    image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+    image_file = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+
+    # 이미지에서 관심있는 영역만 남김
+    image = remove_background(image_file)
+
+    # OCR 수행
+    text_results = read_text(image)
+
+    #print(text_results)
+
+    # 이미지 좌상단 현재 시간 추출
+    current_time = find_current_time(text_results)
+    # print('현재 시간: ', current_time)
+
+    # OCR로 추출된 텍스트들의 관계 정리
+    text_results = delete_invalid_names(text_results)
+    #print(text_results)
+    final_results = mapping(text_results)
+    # print(final_results)
+
+    return current_time, final_results

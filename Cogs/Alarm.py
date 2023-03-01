@@ -10,6 +10,7 @@ from discord.utils import format_dt
 from common import *
 from const_data import *
 from const_key import *
+from bossocr import *
 import BtBot
 import BtDb
 
@@ -330,15 +331,31 @@ class Alarm(commands.Cog):
             await send_error_message(ctx, u"JPG나 PNG로 저장해서 첨부해 주세요")
             return
 
-        self.logger.info(attachment.content_type)
-        self.logger.info(attachment.url)
-        self.logger.info(attachment.description)
-        self.logger.info(attachment.filename)
+        # self.logger.info(attachment.content_type)
+        # self.logger.info(attachment.url)
+        # self.logger.info(attachment.description)
+        # self.logger.info(attachment.filename)
 
-        await attachment.save(f"./temp/{ctx.guild.id}/{attachment.filename}")
+        # 화일로 저장했다가 읽는 방식
+        file_path = f"./temp/{attachment.filename}"
+        await attachment.save(file_path)
+        current_time, boss_delta_time_list = get_ocr_boss_time_list_by_file(file_path)
 
-        # a = await attachment.read()
-        # self.logger.info(type(a))
+        # 메모리에서 처리하는 방식
+        # image_bytes = await attachment.read()
+        # current_time, boss_delta_time_list = get_ocr_boss_time_list_by_bytes(image_bytes)
+
+        self.logger.info(current_time)
+        self.logger.info(boss_delta_time_list)
+
+        test_message = f"이미지 캡쳐 시간 : {current_time}\n"
+        for boss_delta_time_item in boss_delta_time_list:
+            boss_name = boss_delta_time_item[0]
+            boss_time = boss_delta_time_item[1]
+            test_message += f"{boss_name} : {boss_time}\n"
+        test_message = test_message[:-1]
+
+        await send_ok_message(ctx, test_message)
 
     @commands.command(name=cCMD_ALARM_DAILY_FIXED_ONOFF)
     async def onoff_daily_fixed_alarm(self, ctx: commands.Context) -> None:
