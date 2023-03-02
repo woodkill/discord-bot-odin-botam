@@ -9,15 +9,12 @@ pip3 install opencv-python
 pip3 install easyocr
 '''
 
-
-def remove_background(file_name):
+def remove_background(image):
     """
     원본 이미지에서 특정 영역의 색상값만 남기고 나머지 영역은 삭제
-    :param file_name:
+    :param image: 읽은 이미지
     :return:
     """
-    image = cv2.imread(file_name)
-    # image는 RGB 채널이 아니라 BGR 채널임 (opencv 디폴트 채널 순서)
 
     # 남은 시간 색상 범위 (Blue, Green, Red)
     lower = np.array([110, 90, 5])
@@ -50,7 +47,7 @@ def remove_background(file_name):
     mask = img_mask + img_mask2 + img_mask3 + img_mask4
 
     result = cv2.bitwise_and(image, image, mask=mask)
-    cv2.imwrite('text_only.png', result)    # 디버깅용
+    # cv2.imwrite('text_only.png', result)    # 디버깅용
 
     return result
 
@@ -266,8 +263,10 @@ def get_ocr_boss_time_list_by_file(file_path: str) -> (str, list):
     :return:
     """
 
+    image = cv2.imread(file_path)
+
     # 이미지에서 관심있는 영역만 남김
-    image = remove_background(file_path)
+    image = remove_background(image)
 
     # OCR 수행
     text_results = read_text(image)
@@ -294,11 +293,13 @@ def get_ocr_boss_time_list_by_bytes(image_bytes: bytes) -> (str, list):
     :return:
     """
 
-    image_array = np.frombuffer(image_bytes, dtype=np.uint8)
-    image_file = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+    image_np = np.frombuffer(image_bytes, np.uint8)
+    img_np = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
 
     # 이미지에서 관심있는 영역만 남김
-    image = remove_background(image_file)
+    image = remove_background(img_np)
+
+    # image는 RGB 채널이 아니라 BGR 채널임 (opencv 디폴트 채널 순서)
 
     # OCR 수행
     text_results = read_text(image)

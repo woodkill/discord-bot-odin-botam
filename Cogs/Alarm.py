@@ -18,7 +18,7 @@ cCHECK_ALARM_INTERVAL_SECONDS = 1
 
 cTIME_FORMAT_FIXED_TYPE = "%H:%M"
 cTIME_FORMAT_INTERVAL_TYPE = "%Y-%m-%d %H:%M:%S"
-
+cTIME_FORMAT_TIME6DIGIT = "%H%M%S"
 
 class Alarm(commands.Cog):
 
@@ -336,14 +336,9 @@ class Alarm(commands.Cog):
         # self.logger.info(attachment.description)
         # self.logger.info(attachment.filename)
 
-        # 화일로 저장했다가 읽는 방식
-        file_path = f"./temp/{attachment.filename}"
-        await attachment.save(file_path)
-        current_time, boss_delta_time_list = get_ocr_boss_time_list_by_file(file_path)
-
         # 메모리에서 처리하는 방식
-        # image_bytes = await attachment.read()
-        # current_time, boss_delta_time_list = get_ocr_boss_time_list_by_bytes(image_bytes)
+        image_bytes = await attachment.read()
+        current_time, boss_delta_time_list = get_ocr_boss_time_list_by_bytes(image_bytes)
 
         self.logger.info(current_time)
         self.logger.info(boss_delta_time_list)

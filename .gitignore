@@ -286,9 +286,9 @@ dmypy.json
 cython_debug/
 
 # firebase
-./firebase.json
+firebase.json
 
 # 임시
-.temp
+.temp/
 
 
