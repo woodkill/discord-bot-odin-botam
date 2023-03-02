@@ -20,6 +20,7 @@ cTIME_FORMAT_FIXED_TYPE = "%H:%M"
 cTIME_FORMAT_INTERVAL_TYPE = "%Y-%m-%d %H:%M:%S"
 cTIME_FORMAT_TIME6DIGIT = "%H%M%S"
 
+
 class Alarm(commands.Cog):
 
     def __init__(self, bot: BtBot) -> None:
@@ -242,7 +243,7 @@ class Alarm(commands.Cog):
 
         # 두번째 인자가 남은시간 형식에 맞는 지 검사
         str_remained_time = args[1]
-        if str_remained_time != cCMD_PARAM_OFF and not check_timedelta_format(str_remained_time):
+        if str_remained_time != cCMD_PARAM_OFF and not is_korean_timedelta_format(str_remained_time):
             await send_error_message(ctx, f"{str_remained_time} : 남은시간이 형식에 맞지 않습니다.")
             return
 
@@ -279,7 +280,7 @@ class Alarm(commands.Cog):
             await send_ok_message(ctx, f"{str_boss_name} 알람을 취소했습니다.")
             return
 
-        # 키로 보스가 뜨는 날짜 시간, 값으로 보스명 리스트인 dict를 만들어 넣는다.
+        # 키로 : 보스가 뜨는 날짜 시간, 값으로 : 보스명 리스트인 dict를 만들어 넣는다.
         # 보스명을 리스트로 넣는 이유는 만에 하나 초까지 같은 시간에 보스가 중복해서 뜰 수 있으므로...
 
         # 먼저 현재시간과 남은시간을 더해서 보스가 뜨는 시각을 만들어 낸다.
@@ -336,21 +337,127 @@ class Alarm(commands.Cog):
         # self.logger.info(attachment.description)
         # self.logger.info(attachment.filename)
 
-        # 메모리에서 처리하는 방식
-        image_bytes = await attachment.read()
-        current_time, boss_delta_time_list = get_ocr_boss_time_list_by_bytes(image_bytes)
+        # 중첩된 dict를 쓰기 좋게 꺼내 놓는다.
+        guild_dic = self.bot.odin_guilds_dic[ctx.guild.id]
+        try:
+            guild_alarm_dic = guild_dic[kFLD_ALARMS]
+        except KeyError:
+            guild_dic[kFLD_ALARMS] = {}
+            guild_alarm_dic = guild_dic[kFLD_ALARMS]
+        try:
+            guild_interval_alarm_dic = guild_alarm_dic[cBOSS_TYPE_INTERVAL]
+        except KeyError:
+            guild_alarm_dic[cBOSS_TYPE_INTERVAL] = {}
+            guild_interval_alarm_dic = guild_alarm_dic[cBOSS_TYPE_INTERVAL]
 
-        self.logger.info(current_time)
+        # 오딘 보스명 리스트
+        odin_bossname_list = self.db.get_bossname_list()
+
+        # 이미지를 분석해서 스샷시간과 인식된 보스리스트 및 시간 리스트 받아온다.
+        image_bytes = await attachment.read()
+        str_screenshot_time, boss_delta_time_list = get_ocr_boss_time_list_by_bytes(image_bytes, odin_bossname_list)
+        '''
+        233915
+        '''
+        '''
+        [['혼돈의마수굴베이그', '2시간 16분 남음'], ['분노의모네가름', '3시간 50분 남음'], ['혼돈의사제강글로티', '1일 0시간 남음'], ['나태의드라우그', '19시간 31분 남음']]
+        '''
+        self.logger.info(str_screenshot_time)
         self.logger.info(boss_delta_time_list)
 
-        test_message = f"이미지 캡쳐 시간 : {current_time}\n"
-        for boss_delta_time_item in boss_delta_time_list:
-            boss_name = boss_delta_time_item[0]
-            boss_time = boss_delta_time_item[1]
-            test_message += f"{boss_name} : {boss_time}\n"
-        test_message = test_message[:-1]
+        # 스크린샷이 찍힌 시각
+        # 스크린 샷에는 날짜가 나오지 않기 때문에 날짜는 현재로 가정한다.
+        now = datetime.datetime.now()
+        now_date = now.date()
+        screenshot_time = datetime.datetime.strptime(str_screenshot_time, cTIME_FORMAT_TIME6DIGIT).time()
+        screen_shot_datetime = datetime.datetime.combine(now_date, screenshot_time)
 
-        await send_ok_message(ctx, test_message)
+        message = u""
+
+        # 인식된 [[보스명, 보스남은시간], ...] 리스트 순회하면서...
+        for boss_delta_time_pair in  boss_delta_time_list:
+
+            ocr_boss_name = boss_delta_time_pair[0]
+            str_ocr_boss_delta_time = boss_delta_time_pair[1]
+
+            # 인식된 남은 시간이 형식에 안맞으면 패쓰, 맞으면 OCR timedelta 객체 생성
+            if not is_korean_timedelta_format(str_ocr_boss_delta_time):
+                continue
+            ocr_d, ocr_h, ocr_m, ocr_s = get_separated_timedelta_korean(str_ocr_boss_delta_time)
+            ocr_td = datetime.timedelta(days=ocr_d, hours=ocr_h, minutes=ocr_m, seconds=ocr_s)
+
+            # 인식된 보스명이 보스목록에 있는 이름이 아니면 패쓰
+            boss_key, boss_dict = self.db.get_boss_item_by_name(ocr_boss_name)
+            if boss_key is None:
+                continue
+
+            # 인식한 보스가 인터벌 타입이 아니면 패쓰
+            if boss_dict[kBOSS_TYPE] != cBOSS_TYPE_INTERVAL:
+                continue
+
+            # 남은시간이 보스의 인터벌 시간보다 길면 말이 안되므로 패쓰
+            try:
+                str_boss_interval = boss_dict[kBOSS_INTERVAL]
+            except KeyError:
+                continue
+            boss_d, boss_h, boss_m, boss_s = get_separated_timedelta_ddhhmm(str_boss_interval)
+            boss_td = datetime.timedelta(days=boss_d, hours=boss_h, minutes=boss_m, seconds=boss_s)
+            if ocr_td > boss_td:
+                continue
+
+            # 먼저 모든 알람을 뒤져서 같은 보스 알람이 등록되어 있으면 지운다.
+            for str_interval_boss_time, interval_boss_name_list in guild_interval_alarm_dic.items():
+                # 보스명이 있는데... 보스명 리스트에 보스명이 하나만 있으면 알람 자체를 지우고
+                # 보스명이 여러개 있으면 이 보스명만 지워야 한다.
+                if ocr_boss_name in interval_boss_name_list:
+                    guild_interval_alarm_dic[str_interval_boss_time] \
+                        = [v for v in interval_boss_name_list if v != ocr_boss_name]
+            # 보스명 리스트가 비어있는 알람은 지운다.
+            guild_alarm_dic[cBOSS_TYPE_INTERVAL] = {k: v for k, v in guild_interval_alarm_dic.items() if len(v) != 0}
+            guild_interval_alarm_dic = guild_alarm_dic[cBOSS_TYPE_INTERVAL]  # 밑에서 쓰려면
+
+            # 키로 : 보스가 뜨는 날짜 시간, 값으로 : 보스명 리스트인 dict를 만들어 넣는다.
+            # 보스명을 리스트로 넣는 이유는 만에 하나 초까지 같은 시간에 보스가 중복해서 뜰 수 있으므로...
+
+            # 인식된 보스가 뜨는 시각
+            ocr_boss_time = screen_shot_datetime + ocr_td
+            # 이게 현재보다 앞이면 패쓰
+            if ocr_boss_time < now:
+                continue
+
+            # dd:hh:mm 이 알람키
+            alarm_key = ocr_boss_time.strftime(cTIME_FORMAT_INTERVAL_TYPE)
+
+            # 길드 알람 목록에 넣는다.
+            if alarm_key not in guild_interval_alarm_dic:
+                guild_interval_alarm_dic[alarm_key] = [ocr_boss_name]
+            else:
+                guild_interval_alarm_dic[alarm_key].append(ocr_boss_name)
+
+            # 잘 들어갔나 전체길드목록 검사
+            self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
+
+            # 메세지 이어 붙이기
+            message += f"{ocr_boss_name} : {alarm_key} 알람 설정되었습니다.\n"
+
+        # -------- End of ---- for boss_delta_time_pair in  boss_delta_time_list:
+
+        if len(message) > 0:
+            message = message[:-1]
+
+        # 서버 DB에 길드의 알람설정 상태 덮어쓰기
+        self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
+
+        await send_ok_message(ctx, message)
+
+        # test_message = f"이미지 캡쳐 시간 : {str_screenshot_time}\n"
+        # for boss_delta_time_item in boss_delta_time_list:
+        #     boss_name = boss_delta_time_item[0]
+        #     boss_time = boss_delta_time_item[1]
+        #     test_message += f"{boss_name} : {boss_time}\n"
+        # test_message = test_message[:-1]
+        #
+        # await send_ok_message(ctx, test_message)
 
     @commands.command(name=cCMD_ALARM_DAILY_FIXED_ONOFF)
     async def onoff_daily_fixed_alarm(self, ctx: commands.Context) -> None:

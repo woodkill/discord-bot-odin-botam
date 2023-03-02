@@ -159,7 +159,21 @@ class BtDb:
             return False
         return True
 
-    def get_boss_list(self):
+    def get_bossname_list(self) -> list:
+        """
+        보스명 문자열로만 되어 있는 리스트를 만들어서 리턴
+        :return:
+        """
+        # self.logger.info(self.bossDic)
+        if len(self.bossDic) == 0:
+            self.logger.debug(f"self.bossDic 이 비어있습니다.")
+            return None
+        bossname_list = []
+        for item in self.bossDic.values():
+            bossname_list.append(item[kBOSS_NAME])
+        return bossname_list
+
+    def get_boss_list(self) -> list:
         """
         보스정보를 key를 제외하고 리스트로 리턴
         :return: 보스정보 dic의 list
@@ -184,7 +198,7 @@ class BtDb:
         # self.logger.info(self.bossDic)
         if len(self.bossDic) == 0:
             return None, None
-        # self.bossDic의 보스명과 보스별명을 검사하여 해당 보스키값을 리턴한다.
+        # self.bossDic의 보스명과 보스별명을 검사하여 해당 보스키값과 정보dict를 리턴한다.
         for key, item in self.bossDic.items():
             boss_name = item[kBOSS_NAME]
             boss_alias = item[kBOSS_ALIAS]

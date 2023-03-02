@@ -165,7 +165,7 @@ def get_help_list_embed():
     return embed
 
 
-def check_timedelta_format(timedelta_str: str) -> bool:
+def is_korean_timedelta_format(timedelta_str: str) -> bool:
     """
     "0일0시간0분0초' 형식의 패턴을 만족하는 지 검사
     :param timedelta_str: 검사할 문자열

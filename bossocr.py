@@ -128,26 +128,29 @@ def delete_invalid_names(text_results):
     return new_results
             
 
-def find_boss_name(origin_name):
+def find_boss_name(origin_name, bossname_list):
     """
     보스 이름을 정확한 이름으로 변환
     일반적이지 않은 이름이라 한두글자씩 틀리게 인식됨.
     정확한 이름을 리스트에 넣은 후, 인식된 이름과 가장 유사한 정확한 보스 이름 선정
     :param origin_name:
+    :param bossname_list:
     :return:
     """
-    boss_names = ['혼돈의마수굴베이그', '혼돈의사제강글로티', '분노의모네가름', '나태의드라우그', '그로아의사념', '헤르모드의사념', '야른의사념', '굴베이그의사념', \
-                  '파프니르의그림자', '그로아', '칼바람하피', '매트리악', '레라드', '탕그뇨스트', '갸름', '티르', '파르바', '셀로비아', '흐니르', '페티', '바우티', \
-                  '니드호그', '야른', '발두르', '토르', '라이노르', '비요른', '헤르모드', '스칼라니르', '브륀힐드', '라타토스크', '수드리', '파프니르', '오딘', '스바르트',\
-                  '두라스로르', '모네가름', '드라우그', '굴베이그', '아우둠라', '수르트', '메기르', '신마라', '헤르가름', '탕그리스니르', '엘드룬', '우로보로스', '헤임달', \
-                  '미미르', '발리', '노트', '샤무크', '스칼드메르', '화신그로아']
+
+    # TODO: 이거 서버DB에서 받아온걸로 교체해야 한다.
+    # bossname_list = ['혼돈의마수굴베이그', '혼돈의사제강글로티', '분노의모네가름', '나태의드라우그', '그로아의사념', '헤르모드의사념', '야른의사념', '굴베이그의사념', \
+    #               '파프니르의그림자', '그로아', '칼바람하피', '매트리악', '레라드', '탕그뇨스트', '갸름', '티르', '파르바', '셀로비아', '흐니르', '페티', '바우티', \
+    #               '니드호그', '야른', '발두르', '토르', '라이노르', '비요른', '헤르모드', '스칼라니르', '브륀힐드', '라타토스크', '수드리', '파프니르', '오딘', '스바르트',\
+    #               '두라스로르', '모네가름', '드라우그', '굴베이그', '아우둠라', '수르트', '메기르', '신마라', '헤르가름', '탕그리스니르', '엘드룬', '우로보로스', '헤임달', \
+    #               '미미르', '발리', '노트', '샤무크', '스칼드메르', '화신그로아']
 
     name = list(origin_name)
 
     max_similarity = 0
     max_index = -1
-    for i in range(len(boss_names)):
-        boss_name = list(boss_names[i])
+    for i in range(len(bossname_list)):
+        boss_name = list(bossname_list[i])
 
         similarity = bytes_similarity(name, boss_name)
         if similarity > max_similarity:
@@ -158,7 +161,7 @@ def find_boss_name(origin_name):
     #    print('origin: ', origin_name, ' target: ', boss_names[max_index], ' similarity: ', max_similarity)
 
     # 가장 유사한 이름과의 유사도가 0.55 미만이라면 무시 (예를 들면, '5시간 37분 남음' 같은 것들)
-    return boss_names[max_index] if max_similarity >= 0.55 else None
+    return bossname_list[max_index] if max_similarity >= 0.55 else None
 
 
 def get_nearest_box_index(text_results, base_index, vertical_weight):
@@ -233,17 +236,19 @@ def vertical_distance_boxes(box1, box2):
     return abs(center1 - center2)
 
 
-def mapping(text_results):
+def mapping(text_results, bossname_list):
     """
     보스 이름과 매칭되는 남은 시간을 찾는 함수
     이미지상 보스 이름과 해당 보스의 남은 시간이 서로 가장 가깝게 위치함.
     find_boss_name()에서 보스 이름이 나왔다고 하면, 그것과 가장 가까운 텍스트 영역을 찾음. 텍스트 디텍트가 제대로 되었다면, 아마도 남은 시간일 것
     :param text_results:
+    :param bossname_list:
     :return:
     """
+
     mapped_data = []
     for i in range(len(text_results)):
-        boss_name = find_boss_name(text_results[i][1])
+        boss_name = find_boss_name(text_results[i][1], bossname_list)
         if boss_name is None:
             continue
 
@@ -256,10 +261,11 @@ def mapping(text_results):
     return mapped_data
 
 
-def get_ocr_boss_time_list_by_file(file_path: str) -> (str, list):
+def get_ocr_boss_time_list_by_file(file_path: str, bossname_list) -> (str, list):
     """
 
     :param file_path:
+    :param bossname_list:
     :return:
     """
 
@@ -280,18 +286,20 @@ def get_ocr_boss_time_list_by_file(file_path: str) -> (str, list):
     # OCR로 추출된 텍스트들의 관계 정리
     text_results = delete_invalid_names(text_results)
     #print(text_results)
-    final_results = mapping(text_results)
+    final_results = mapping(text_results, bossname_list)
     # print(final_results)
 
     return current_time, final_results
 
 
-def get_ocr_boss_time_list_by_bytes(image_bytes: bytes) -> (str, list):
+def get_ocr_boss_time_list_by_bytes(image_bytes: bytes, bossname_list) -> (str, list):
     """
 
     :param image_bytes:
+    :param bossname_list:
     :return:
     """
+
 
     image_np = np.frombuffer(image_bytes, np.uint8)
     img_np = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
@@ -307,13 +315,22 @@ def get_ocr_boss_time_list_by_bytes(image_bytes: bytes) -> (str, list):
     #print(text_results)
 
     # 이미지 좌상단 현재 시간 추출
-    current_time = find_current_time(text_results)
-    # print('현재 시간: ', current_time)
+    screenshot_time = find_current_time(text_results)
+    # print('현재 시간: ', screenshot_time)
 
     # OCR로 추출된 텍스트들의 관계 정리
     text_results = delete_invalid_names(text_results)
     #print(text_results)
-    final_results = mapping(text_results)
+    final_results = mapping(text_results, bossname_list)
     # print(final_results)
 
-    return current_time, final_results
+    # 문자열 정리
+    screenshot_time = screenshot_time.replace(" ", "")
+    screenshot_time = screenshot_time.replace(":", "")
+    for boss_time_pair in final_results:
+        # 보스명 및 남은시간에 스페이스 있으면 제거
+        boss_time_pair[0] = boss_time_pair[0].replace(" ", "")
+        boss_time_pair[1] = boss_time_pair[1].replace(" ", "")
+        boss_time_pair[1] = boss_time_pair[1].replace("남음", "")
+
+    return screenshot_time, final_results
