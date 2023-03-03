@@ -179,15 +179,15 @@ def is_korean_timedelta_format(timedelta_str: str) -> bool:
     return True
 
 
-def is_hh_mm_timedelta_format(timedelta_str: str) -> bool:
+def is_hh_mm_timedelta_format(time_str: str) -> bool:
     """
     HH:MM 형식의 패턴을 만족하는 지 검사
-    :param timedelta_str:
+    :param time_str:
     :return:
     """
     # 정규표현식 HH:MM 형식이어야 함.
-    pattern = r'(\d{2}):(\d{2}))'
-    match = re.match(pattern, timedelta_str)
+    pattern = r'(\d{2}):(\d{2})'
+    match = re.match(pattern, time_str)
     if not match:
         return False
     return True
@@ -231,7 +231,7 @@ def get_separated_time_hhmm(timedelta_str: str) -> (int, int, int, int):
     :param timedelta_str: 'hh:mm' 형식의 문자열
     :return: "hh:mm" 형식의 문자열. 이건 몇시간 몇분이 아니라 몇시몇분을 나타낸다.
     """
-    pattern = r'(\d{2}):(\d{2}))'
+    pattern = r'(\d{2}):(\d{2})'
     match = re.match(pattern, timedelta_str)
     g = match.groups()
     d = 0

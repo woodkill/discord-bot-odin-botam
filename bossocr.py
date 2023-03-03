@@ -17,7 +17,9 @@ def remove_background(image):
     """
 
     # 남은 시간 색상 범위 (Blue, Green, Red)
-    lower = np.array([110, 90, 5])
+
+    # 하늘색
+    lower = np.array([90, 72, 5])
     upper = np.array([255, 220, 60])
 
     # 해당 색상 범위의 영역만 mask로 추출

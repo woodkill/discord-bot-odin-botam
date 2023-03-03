@@ -256,42 +256,39 @@ class Alarm(commands.Cog):
             guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM] = {}
             guild_today_alarm_dic = guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM]
 
-        # TODO : 여기서부터 다시
-
         # 먼저 모든 알람을 뒤져서 같은 이름의 알람이 등록되어 있으면 지운다.
-        for str_today_schedule_name, today_schedule_name_list in guild_today_alarm_dic.items():
+        for str_today_schedule_time, today_schedule_name_list in guild_today_alarm_dic.items():
             # 알람명이 있는데... 알람명 리스트에 알람명이 하나만 있으면 알람 자체를 지우고
             # 알람명이 여러개 있으면 이 알람명만 지워야 한다.
-            if str_today_schedule_name in today_schedule_name_list:
-                guild_today_alarm_dic[str_today_schedule_name] \
-                    = [v for v in today_schedule_name_list if v != str_today_schedule_name]
+            if str_wanted_name in today_schedule_name_list:
+                guild_today_alarm_dic[str_today_schedule_time] \
+                    = [v for v in today_schedule_name_list if v != str_wanted_name]
         # 알람명 리스트가 비어있는 알람은 지운다.
         guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM] = {k: v for k, v in guild_today_alarm_dic.items() if len(v) != 0}
         guild_today_alarm_dic = guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM]  # 밑에서 쓰려면
-
-        # TODO : 여기서부터....
 
         # 알람을 지우는 명령어인 경우..
         if str_wanted_time == cCMD_PARAM_OFF:
             # 서버에 기록하고 메세지 보내고 종료
             self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
-            await send_ok_message(ctx, f"{str_boss_name} 알람을 취소했습니다.")
+            await send_ok_message(ctx, f"{str_wanted_name} 알람을 취소했습니다.")
             return
 
-        # 키로 : 보스가 뜨는 날짜 시간, 값으로 : 보스명 리스트인 dict를 만들어 넣는다.
-        # 보스명을 리스트로 넣는 이유는 만에 하나 초까지 같은 시간에 보스가 중복해서 뜰 수 있으므로...
+        # 키로 : 알람 시각, 값으로 : 알람명 리스트인 dict를 만들어 넣는다.
+        # 알람명을 "리스트"로 넣는 이유는 만에 하나 같은 시각의 알람을 중복해서 넣을 수 있으므로...
 
-        # 먼저 현재시간과 남은시간을 더해서 보스가 뜨는 시각을 만들어 낸다.
-        now = datetime.datetime.now()
-        d, h, m, s = get_separated_timedelta_korean(str_remained_time)
-        td = datetime.timedelta(days=d, hours=h, minutes=m, seconds=s)
-        boss_time = now + td
-        alarm_key = boss_time.strftime(cTIME_FORMAT_INTERVAL_TYPE)
+        # 먼저 오늘의 원하는 시각 알람 만들어 낸다.
+        now_date = datetime.datetime.now().date()
+        # d, h, m, s = get_separated_time_hhmm(str_wanted_time)
+        time = datetime.datetime.strptime(str_wanted_time, cTIME_FORMAT_FIXED_TYPE).time()
+        # td = datetime.timedelta(days=d, hours=h, minutes=m, seconds=s)
+        wanted_alarm_time = datetime.datetime.combine(now_date, time)
+        alarm_key = wanted_alarm_time.strftime(cTIME_FORMAT_INTERVAL_TYPE)
 
-        if alarm_key not in guild_interval_alarm_dic:
-            guild_interval_alarm_dic[alarm_key] = [str_boss_name]
+        if alarm_key not in guild_today_alarm_dic:
+            guild_today_alarm_dic[alarm_key] = [str_wanted_name]
         else:
-            guild_interval_alarm_dic[alarm_key].append(str_boss_name)
+            guild_today_alarm_dic[alarm_key].append(str_wanted_name)
 
         # 잘 들어갔나 전체길드목록 검사
         self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
@@ -299,8 +296,7 @@ class Alarm(commands.Cog):
         # 서버 DB에 길드의 알람설정 상태 덮어쓰기
         self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
 
-        await send_ok_message(ctx, f"{str_boss_name} : {alarm_key} 알람 설정되었습니다.")
-
+        await send_ok_message(ctx, f"{str_wanted_name} : {alarm_key} 알람 설정되었습니다.")
 
     @commands.command(name=cCMD_ALARM_REGISTER)
     async def register_boss_alarm(self, ctx: commands.Context, *args) -> None:
@@ -988,6 +984,78 @@ class Alarm(commands.Cog):
             for alarm_key in to_remove:
                 guild_interval_alarm_dic.pop(alarm_key)
                 self.db.set_guild_alarms(guild_id, guild_alarm_dic)
+
+            # 4 "오늘" 명령어용
+            '''
+            {
+                "2023-03-03 21:47:00": [
+                    "알브릴레이"
+                ]
+            }
+            '''
+
+            # TODO : 복사해서 수정 시작
+
+            try:
+                guild_interval_alarm_dic = guild_alarm_dic[cBOSS_TYPE_INTERVAL]
+            except KeyError:
+                guild_interval_alarm_dic = {}
+
+            # 이미 지나갔거나 알람문자를 보낸 알람 시간은 지워야 하므로 for문이 다 지난 다음 지운다.
+            # 그 지울 알람 키를 저장해 둘 리스트
+            to_remove = []
+
+            for str_alarm_time, boss_list in guild_interval_alarm_dic.items():
+
+                # '2023-02-28 01:24:27' 형태로 저장되어 있음.
+                alarm_datetime = datetime.datetime.strptime(str_alarm_time, cTIME_FORMAT_INTERVAL_TYPE)
+                # self.logger.info(f"alarm_datetime: {alarm_datetime}")
+
+                # 현재 시각과 보스가 뜨는 시각의 차이
+                time_diff_seconds = (alarm_datetime - now).total_seconds()
+                # self.logger.info(f"{time_diff_seconds}")
+
+                str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 보스목록
+
+                if time_diff_seconds < 0:  # 이 얘기는 이미 보스가 뜨는 시간이 지나갔다는 얘기
+                    # self.logger.info(f"보스출현 시간이 이미 지나갔습니다.")
+                    to_remove.append(str_alarm_time)
+                    continue
+
+                # 알람간격 중에 하나로 알려야 하는 상황 체크
+                i = -1
+                for j in range(len(guild_timer_seconds_list)):
+                    # 알람 간격 중에 하나가 체크시간 이내 범위에 있다.
+                    diff_timer = time_diff_seconds - guild_timer_seconds_list[j]
+                    if cCHECK_ALARM_INTERVAL_SECONDS - 1 < diff_timer <= cCHECK_ALARM_INTERVAL_SECONDS:
+                        i = j
+                        break
+                if i != -1:
+                    message = f"{str_boss_list} 출현 {guild_timer_list[i]}분 전입니다."
+                    await channel.send(message, tts=True)
+                    continue
+
+                # 보스 출현 시간
+                if time_diff_seconds <= cCHECK_ALARM_INTERVAL_SECONDS:
+                    message = f"{str_boss_list} 출현 시간입니다."
+                    await channel.send(message, tts=True)
+                    to_remove.append(str_alarm_time)
+                    continue
+
+                # log용 : time_diff_seconds > cCHECK_ALARM_INTERVAL_SECONDS
+                rh = round(time_diff_seconds // 3600)
+                rm = round((time_diff_seconds // 60) % 60)
+                rs = round(time_diff_seconds % 60)
+                # self.logger.info(f"보탐시간과의 차이 : {rh:02}:{rm:02}:{rs:02}")
+                self.logger.info(f"{rh:02}:{rm:02}:{rs:02} - {str_boss_list}")  # {str_alarm_time}
+
+            # 인터벌 타입 보스는 알람 목록에서 지워야 한다.
+            for alarm_key in to_remove:
+                guild_interval_alarm_dic.pop(alarm_key)
+                self.db.set_guild_alarms(guild_id, guild_alarm_dic)
+
+            # TODO : 복사해서 수정 끝
+
 
     # ------------ End of : async def do_check_alarm(self) ------------
 
