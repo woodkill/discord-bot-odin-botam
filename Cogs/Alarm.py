@@ -168,7 +168,7 @@ class Alarm(commands.Cog):
 
             embed_list.append(weekday_fixed_embed)
 
-        # 3.
+        # 3. 필보 알람 검사
         """
         {
             "'2023-02-28 01:24:27'": [
@@ -196,15 +196,48 @@ class Alarm(commands.Cog):
                 util_str = format_dt(interval_boss_time, style='R')
                 nd = humanize.naturalday(interval_boss_time, format='%m월%d일')
                 nt = str_interval_boss_time[11:]
-                for boss_name in interval_boss_name_list:
+                for today_alarm_name in interval_boss_name_list:
                     # 이건 이름 보여주는 방식
                     # interval_boss_embed.add_field(name=boss_name, value=str_interval_boss_time, inline=True)
                     # 이건 이름 안 보여주는 방식
                     # interval_boss_embed.add_field(name=boss_name, value=f"{nd} {nt}", inline=True)
                     # 이건 구어체 방식 마우스 위로 대면 날짜 나옴
-                    interval_boss_embed.add_field(name=boss_name, value=f"{util_str}", inline=True)
+                    interval_boss_embed.add_field(name=today_alarm_name, value=f"{util_str}", inline=True)
 
             embed_list.append(interval_boss_embed)
+
+        # 4. 오늘 알람 검사
+
+        try:
+            guild_today_alarm_dic = guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM]
+        except KeyError:
+            guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM] = {}
+            guild_today_alarm_dic = guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM]
+
+        if len(guild_today_alarm_dic) > 0:
+
+            today_alarm_embed = discord.Embed(
+                title=cCMD_ALARM_TODAY,
+                description=u"",
+                color=discord.Color.purple())
+
+            # self.logger.info(dict(sorted(guild_today_alarm_dic.items())))
+
+            for str_today_schedule_time, today_schedule_name_list in dict(
+                    sorted(guild_today_alarm_dic.items())).items():
+                today_alarm_datetime = datetime.datetime.strptime(str_today_schedule_time, cTIME_FORMAT_INTERVAL_TYPE)
+                util_str = format_dt(today_alarm_datetime, style='R')
+                nd = humanize.naturalday(today_alarm_datetime, format='%m월%d일')
+                nt = str_today_schedule_time[11:]
+                for today_alarm_name in today_schedule_name_list:
+                    # 이건 이름 보여주는 방식
+                    # today_alarm_embed.add_field(name=today_alarm_name, value=str_today_schedule_time, inline=True)
+                    # 이건 이름 안 보여주는 방식
+                    # interval_boss_embed.add_field(name=today_alarm_name, value=f"{nd} {nt}", inline=True)
+                    # 이건 구어체 방식 마우스 위로 대면 날짜 나옴
+                    today_alarm_embed.add_field(name=today_alarm_name, value=f"{util_str}", inline=True)
+
+            embed_list.append(today_alarm_embed)
 
         if len(embed_list) > 0:
             await ctx.send(embeds=embed_list)
@@ -823,11 +856,11 @@ class Alarm(commands.Cog):
 
                 # 시각:분 형태로 저장되어 있음. 오늘 보스타임으로 변환
                 alarm_time = datetime.datetime.strptime(str_alarm_time, cTIME_FORMAT_FIXED_TYPE).time()
-                alarm_datetime = datetime.datetime.combine(now_date, alarm_time)
+                today_alarm_datetime = datetime.datetime.combine(now_date, alarm_time)
                 # self.logger.info(f"alarm_datetime: {alarm_datetime}")
 
                 # 현재 시각과 보스가 뜨는 시각의 차이
-                time_diff_seconds = (alarm_datetime - now).total_seconds()
+                time_diff_seconds = (today_alarm_datetime - now).total_seconds()
                 # self.logger.info(f"{time_diff_seconds}")
 
                 # str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 월보 보스목록
@@ -880,11 +913,11 @@ class Alarm(commands.Cog):
 
                     # 시각:분 형태로 저장되어 있음. 오늘 보스타임으로 변환
                     alarm_time = datetime.datetime.strptime(str_alarm_time, cTIME_FORMAT_FIXED_TYPE).time()
-                    alarm_datetime = datetime.datetime.combine(now_date, alarm_time)
+                    today_alarm_datetime = datetime.datetime.combine(now_date, alarm_time)
                     # self.logger.info(f"alarm_datetime: {alarm_datetime}")
 
                     # 현재 시각과 보스가 뜨는 시각의 차이
-                    time_diff_seconds = (alarm_datetime - now).total_seconds()
+                    time_diff_seconds = (today_alarm_datetime - now).total_seconds()
                     # self.logger.info(f"{time_diff_seconds}")
 
                     # str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 성채 보스목록
@@ -939,11 +972,11 @@ class Alarm(commands.Cog):
             for str_alarm_time, boss_list in guild_interval_alarm_dic.items():
 
                 # '2023-02-28 01:24:27' 형태로 저장되어 있음.
-                alarm_datetime = datetime.datetime.strptime(str_alarm_time, cTIME_FORMAT_INTERVAL_TYPE)
+                today_alarm_datetime = datetime.datetime.strptime(str_alarm_time, cTIME_FORMAT_INTERVAL_TYPE)
                 # self.logger.info(f"alarm_datetime: {alarm_datetime}")
 
                 # 현재 시각과 보스가 뜨는 시각의 차이
-                time_diff_seconds = (alarm_datetime - now).total_seconds()
+                time_diff_seconds = (today_alarm_datetime - now).total_seconds()
                 # self.logger.info(f"{time_diff_seconds}")
 
                 str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 보스목록
@@ -994,32 +1027,30 @@ class Alarm(commands.Cog):
             }
             '''
 
-            # TODO : 복사해서 수정 시작
-
             try:
-                guild_interval_alarm_dic = guild_alarm_dic[cBOSS_TYPE_INTERVAL]
+                guild_today_alarm_dic = guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM]
             except KeyError:
-                guild_interval_alarm_dic = {}
+                guild_today_alarm_dic = {}
 
             # 이미 지나갔거나 알람문자를 보낸 알람 시간은 지워야 하므로 for문이 다 지난 다음 지운다.
             # 그 지울 알람 키를 저장해 둘 리스트
             to_remove = []
 
-            for str_alarm_time, boss_list in guild_interval_alarm_dic.items():
+            for str_today_schedule_time, today_schedule_name_list in guild_today_alarm_dic.items():
 
                 # '2023-02-28 01:24:27' 형태로 저장되어 있음.
-                alarm_datetime = datetime.datetime.strptime(str_alarm_time, cTIME_FORMAT_INTERVAL_TYPE)
-                # self.logger.info(f"alarm_datetime: {alarm_datetime}")
+                today_alarm_datetime = datetime.datetime.strptime(str_today_schedule_time, cTIME_FORMAT_INTERVAL_TYPE)
+                # self.logger.info(f"alarm_datetime: {today_alarm_datetime}")
 
                 # 현재 시각과 보스가 뜨는 시각의 차이
-                time_diff_seconds = (alarm_datetime - now).total_seconds()
+                time_diff_seconds = (today_alarm_datetime - now).total_seconds()
                 # self.logger.info(f"{time_diff_seconds}")
 
-                str_boss_list = ", ".join(boss_list)  # 이 시간에 뜨는 보스목록
+                str_today_schedule_name_list = ", ".join(today_schedule_name_list)  # 이 시간에 등록되어 있는 알람명목록
 
-                if time_diff_seconds < 0:  # 이 얘기는 이미 보스가 뜨는 시간이 지나갔다는 얘기
-                    # self.logger.info(f"보스출현 시간이 이미 지나갔습니다.")
-                    to_remove.append(str_alarm_time)
+                if time_diff_seconds < 0:  # 이 얘기는 이미 알람 시간이 지나갔다는 얘기
+                    # self.logger.info(f"알람 시간이 이미 지나갔습니다.")
+                    to_remove.append(str_today_schedule_time)
                     continue
 
                 # 알람간격 중에 하나로 알려야 하는 상황 체크
@@ -1031,31 +1062,28 @@ class Alarm(commands.Cog):
                         i = j
                         break
                 if i != -1:
-                    message = f"{str_boss_list} 출현 {guild_timer_list[i]}분 전입니다."
+                    message = f"{str_today_schedule_name_list} {guild_timer_list[i]}분 전입니다."
                     await channel.send(message, tts=True)
                     continue
 
-                # 보스 출현 시간
+                # 알람 시간
                 if time_diff_seconds <= cCHECK_ALARM_INTERVAL_SECONDS:
-                    message = f"{str_boss_list} 출현 시간입니다."
+                    message = f"{str_today_schedule_name_list} 시간입니다."
                     await channel.send(message, tts=True)
-                    to_remove.append(str_alarm_time)
+                    to_remove.append(str_today_schedule_time)
                     continue
 
                 # log용 : time_diff_seconds > cCHECK_ALARM_INTERVAL_SECONDS
                 rh = round(time_diff_seconds // 3600)
                 rm = round((time_diff_seconds // 60) % 60)
                 rs = round(time_diff_seconds % 60)
-                # self.logger.info(f"보탐시간과의 차이 : {rh:02}:{rm:02}:{rs:02}")
-                self.logger.info(f"{rh:02}:{rm:02}:{rs:02} - {str_boss_list}")  # {str_alarm_time}
+                # self.logger.info(f"알람시간과의 차이 : {rh:02}:{rm:02}:{rs:02}")
+                self.logger.info(f"{rh:02}:{rm:02}:{rs:02} - {str_today_schedule_name_list}")  # {str_alarm_time}
 
-            # 인터벌 타입 보스는 알람 목록에서 지워야 한다.
+            # 알람 목록에서 지워야 한다.
             for alarm_key in to_remove:
-                guild_interval_alarm_dic.pop(alarm_key)
+                guild_today_alarm_dic.pop(alarm_key)
                 self.db.set_guild_alarms(guild_id, guild_alarm_dic)
-
-            # TODO : 복사해서 수정 끝
-
 
     # ------------ End of : async def do_check_alarm(self) ------------
 
