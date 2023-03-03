@@ -179,6 +179,20 @@ def is_korean_timedelta_format(timedelta_str: str) -> bool:
     return True
 
 
+def is_hh_mm_timedelta_format(timedelta_str: str) -> bool:
+    """
+    HH:MM 형식의 패턴을 만족하는 지 검사
+    :param timedelta_str:
+    :return:
+    """
+    # 정규표현식 HH:MM 형식이어야 함.
+    pattern = r'(\d{2}):(\d{2}))'
+    match = re.match(pattern, timedelta_str)
+    if not match:
+        return False
+    return True
+
+
 def get_separated_timedelta_korean(timedelta_str: str) -> (int, int, int, int):
     """
     시간 문자열을 분석, 쪼개서 리턴하는 함수.

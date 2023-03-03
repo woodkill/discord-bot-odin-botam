@@ -211,6 +211,97 @@ class Alarm(commands.Cog):
         else:
             await send_ok_message(ctx, u"현재 켜져 있는 알람이 없습니다.")
 
+    @commands.command(name=cCMD_ALARM_TODAY)
+    async def today_alarm(self, ctx: commands.Context, *args) -> None:
+        """
+        금일스케쥴 맘대로 이름 등록용
+        :param ctx:
+        :param args:
+        :return:
+        """
+
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await send_guide_message(ctx, cMSG_REGISTER_GUILD_FIRST)
+            return
+
+        # 비정상 상태 체크
+        if ctx.guild.id not in self.bot.odin_guilds_dic:
+            await send_error_message(ctx, cMSG_NO_GUILD_INFO)
+            return
+
+        # 명령어 형식이 맞는지 검사
+        if len(args) != 2:  # 인자가 2개이어야 함
+            await send_usage_embed(ctx, cCMD_ALARM_TODAY)
+            return
+
+        # 두번째 인자가 남은시간 형식에 맞는 지 검사
+        str_wanted_time = args[1]
+        if str_wanted_time != cCMD_PARAM_OFF and not is_hh_mm_timedelta_format(str_wanted_time):
+            await send_error_message(ctx, f"{str_wanted_time} : 알람시각이 형식에 맞지 않습니다.")
+            return
+
+        str_wanted_name = args[0]
+
+        # 중첩된 dict를 쓰기 좋게 꺼내 놓는다.
+        guild_dic = self.bot.odin_guilds_dic[ctx.guild.id]
+        try:
+            guild_alarm_dic = guild_dic[kFLD_ALARMS]
+        except KeyError:
+            guild_dic[kFLD_ALARMS] = {}
+            guild_alarm_dic = guild_dic[kFLD_ALARMS]
+        try:
+            guild_today_alarm_dic = guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM]
+        except KeyError:
+            guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM] = {}
+            guild_today_alarm_dic = guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM]
+
+        # TODO : 여기서부터 다시
+
+        # 먼저 모든 알람을 뒤져서 같은 이름의 알람이 등록되어 있으면 지운다.
+        for str_today_schedule_name, today_schedule_name_list in guild_today_alarm_dic.items():
+            # 알람명이 있는데... 알람명 리스트에 알람명이 하나만 있으면 알람 자체를 지우고
+            # 알람명이 여러개 있으면 이 알람명만 지워야 한다.
+            if str_today_schedule_name in today_schedule_name_list:
+                guild_today_alarm_dic[str_today_schedule_name] \
+                    = [v for v in today_schedule_name_list if v != str_today_schedule_name]
+        # 알람명 리스트가 비어있는 알람은 지운다.
+        guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM] = {k: v for k, v in guild_today_alarm_dic.items() if len(v) != 0}
+        guild_today_alarm_dic = guild_alarm_dic[cKEY_TODAY_SCHDULE_ALARM]  # 밑에서 쓰려면
+
+        # TODO : 여기서부터....
+
+        # 알람을 지우는 명령어인 경우..
+        if str_wanted_time == cCMD_PARAM_OFF:
+            # 서버에 기록하고 메세지 보내고 종료
+            self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
+            await send_ok_message(ctx, f"{str_boss_name} 알람을 취소했습니다.")
+            return
+
+        # 키로 : 보스가 뜨는 날짜 시간, 값으로 : 보스명 리스트인 dict를 만들어 넣는다.
+        # 보스명을 리스트로 넣는 이유는 만에 하나 초까지 같은 시간에 보스가 중복해서 뜰 수 있으므로...
+
+        # 먼저 현재시간과 남은시간을 더해서 보스가 뜨는 시각을 만들어 낸다.
+        now = datetime.datetime.now()
+        d, h, m, s = get_separated_timedelta_korean(str_remained_time)
+        td = datetime.timedelta(days=d, hours=h, minutes=m, seconds=s)
+        boss_time = now + td
+        alarm_key = boss_time.strftime(cTIME_FORMAT_INTERVAL_TYPE)
+
+        if alarm_key not in guild_interval_alarm_dic:
+            guild_interval_alarm_dic[alarm_key] = [str_boss_name]
+        else:
+            guild_interval_alarm_dic[alarm_key].append(str_boss_name)
+
+        # 잘 들어갔나 전체길드목록 검사
+        self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
+
+        # 서버 DB에 길드의 알람설정 상태 덮어쓰기
+        self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
+
+        await send_ok_message(ctx, f"{str_boss_name} : {alarm_key} 알람 설정되었습니다.")
+
+
     @commands.command(name=cCMD_ALARM_REGISTER)
     async def register_boss_alarm(self, ctx: commands.Context, *args) -> None:
         """
