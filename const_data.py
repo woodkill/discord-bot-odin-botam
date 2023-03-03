@@ -46,7 +46,7 @@ cUsageDic = {
     cCMD_ALARM_WEEKDAY_FIXED_ONOFF: {kCMD_USAGE: f"{cCMD_ALARM_WEEKDAY_FIXED_ONOFF}", kCMD_EXPLANATION: f"{cCMD_ALARM_WEEKDAY_FIXED_ONOFF} 알람 ON / OFF"},
     cCMD_ALARM_REGISTER:            {kCMD_USAGE: f"{cCMD_ALARM_REGISTER} ***보스명 [남은시간|끄기]***", kCMD_EXPLANATION: f"{cCMD_ALARM_REGISTER} 알람 추가/삭제"},
     cCMD_ALARM_TIMETABLE:           {kCMD_USAGE: f"{cCMD_ALARM_TIMETABLE}", kCMD_EXPLANATION: f"보스 시간표 이미지 첨부로 알람시간 자동인식"},
-    cCMD_ALARM_TODAY:            {kCMD_USAGE: f"{cCMD_ALARM_TODAY} ***알람명 시각:분***", kCMD_EXPLANATION: f"원하는 이름의 알람을 설정(금일스케쥴용)"},
+    cCMD_ALARM_TODAY:               {kCMD_USAGE: f"{cCMD_ALARM_TODAY} ***알람명 시각:분***", kCMD_EXPLANATION: f"원하는 이름의 알람을 설정(금일스케쥴용)"},
 }
 
 '''

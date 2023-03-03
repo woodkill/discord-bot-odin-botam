@@ -40,7 +40,8 @@ class Guild(commands.Cog):
         :param arg:
         :return:
         '''
-        self.logger.info(f"{cCMD_GUILD_HELP} {args}")
+        self.logger.info(f"{cCMD_GUILD_HELP} {args} by {ctx.message.author}")
+
         if len(args) == 0:
             await ctx.send(embed=get_help_list_embed())
             return
@@ -58,7 +59,7 @@ class Guild(commands.Cog):
         :param args:
         :return: 없음
         '''
-        self.logger.info(f"{cCMD_GUILD_REGISTER} {args}")
+        self.logger.info(f"{cCMD_GUILD_REGISTER} {args} by {ctx.message.author}")
 
         # 명령어 형식이 맞는지 검사
         if len(args) > 2 or len(args) == 1: # 인자가 없거나 2개이어야 함
@@ -95,7 +96,7 @@ class Guild(commands.Cog):
         :param ctx:
         :return:
         """
-        self.logger.info(f"{cCMD_GUILD_REGISTER_CHANNEL}")
+        self.logger.info(f"{cCMD_GUILD_REGISTER_CHANNEL} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):

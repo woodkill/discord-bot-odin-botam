@@ -50,7 +50,7 @@ class Alarm(commands.Cog):
         :param ctx:
         :return:
         """
-        logging.info(f"{cCMD_ALARM_TIMER}")
+        self.logging.info(f"{cCMD_ALARM_TIMER} {args} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -99,7 +99,7 @@ class Alarm(commands.Cog):
         :param ctx:
         :return:
         """
-        logging.info(f"{cCMD_ALARM_LIST}")
+        self.logging.info(f"{cCMD_ALARM_LIST} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -252,6 +252,7 @@ class Alarm(commands.Cog):
         :param args:
         :return:
         """
+        self.logging.info(f"{cCMD_ALARM_TODAY} {args} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -324,7 +325,7 @@ class Alarm(commands.Cog):
             guild_today_alarm_dic[alarm_key].append(str_wanted_name)
 
         # 잘 들어갔나 전체길드목록 검사
-        self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
+        # self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
 
         # 서버 DB에 길드의 알람설정 상태 덮어쓰기
         self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
@@ -338,6 +339,7 @@ class Alarm(commands.Cog):
         :param ctx:
         :return:
         """
+        self.logging.info(f"{cCMD_ALARM_REGISTER} {args} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -416,7 +418,7 @@ class Alarm(commands.Cog):
             guild_interval_alarm_dic[alarm_key].append(str_boss_name)
 
         # 잘 들어갔나 전체길드목록 검사
-        self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
+        # self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
 
         # 서버 DB에 길드의 알람설정 상태 덮어쓰기
         self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
@@ -430,6 +432,7 @@ class Alarm(commands.Cog):
         :param ctx:
         :return:
         """
+        self.logging.info(f"{cCMD_ALARM_TIMETABLE} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -555,10 +558,10 @@ class Alarm(commands.Cog):
                 guild_interval_alarm_dic[alarm_key].append(ocr_boss_name)
 
             # 잘 들어갔나 전체길드목록 검사
-            self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
+            # self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
 
             # 메세지 이어 붙이기
-            message += f"{ocr_boss_name} : {alarm_key} 알람 설정되었습니다.\n"
+            message += f"{ocr_boss_name} : {str_ocr_boss_delta_time} : {alarm_key} 알람\n"
 
         # -------- End of ---- for boss_delta_time_pair in  boss_delta_time_list:
 
@@ -586,7 +589,7 @@ class Alarm(commands.Cog):
         :param ctx: Context
         :return:
         """
-        logging.info(f"{cCMD_ALARM_DAILY_FIXED_ONOFF}")
+        self.logging.info(f"{cCMD_ALARM_DAILY_FIXED_ONOFF} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -653,7 +656,7 @@ class Alarm(commands.Cog):
 
                 # 길드전체 알람 dict에 제대로 들어가 있는지 검사
                 # self.logger.info(f"{self.bot.odin_guilds_dic}")
-                self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=4, ensure_ascii=False)}")
+                # self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=4, ensure_ascii=False)}")
 
                 # 서버 DB에 길드의 알람설정 상태 덮어쓰기
                 self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
@@ -682,7 +685,7 @@ class Alarm(commands.Cog):
 
                 # 길드전체 알람 dict에 제대로 들어가 있는지?
                 # self.logger.info(f"{self.bot.odin_guilds_dic}")
-                self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
+                # self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
 
                 # 서버 DB에 길드의 알람설정 상태 덮어쓰기
                 self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
@@ -699,7 +702,7 @@ class Alarm(commands.Cog):
         :param ctx: Context
         :return:
         """
-        logging.info(f"{cCMD_ALARM_WEEKDAY_FIXED_ONOFF}")
+        self.logging.info(f"{cCMD_ALARM_WEEKDAY_FIXED_ONOFF} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -766,7 +769,7 @@ class Alarm(commands.Cog):
 
                 # 길드전체 알람 dict에 제대로 들어가 있는지 검사
                 # self.logger.info(f"{self.bot.odin_guilds_dic}")
-                self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
+                # self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
 
                 # 서버 DB에 길드의 알람설정 상태 덮어쓰기
                 self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
@@ -799,7 +802,7 @@ class Alarm(commands.Cog):
 
                 # 길드전체 알람 dict에 제대로 들어가 있는지?
                 # self.logger.info(f"{self.bot.odin_guilds_dic}")
-                self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
+                # self.logger.info(f"{json.dumps(self.bot.odin_guilds_dic, indent=2, ensure_ascii=False)}")
 
                 # 서버 DB에 길드의 알람설정 상태 덮어쓰기
                 self.bot.db.set_guild_alarms(ctx.guild.id, guild_alarm_dic)
@@ -893,7 +896,7 @@ class Alarm(commands.Cog):
                 rm = round((time_diff_seconds // 60) % 60)
                 rs = round(time_diff_seconds % 60)
                 # self.logger.info(f"보탐시간과의 차이 : {rh:02}:{rm:02}:{rs:02}")
-                self.logger.info(f"{rh:02}:{rm:02}:{rs:02} 전 - {cCMD_ALARM_DAILY_FIXED_ONOFF}")  # {str_alarm_time}
+                # self.logger.info(f"{rh:02}:{rm:02}:{rs:02} 전 - {cCMD_ALARM_DAILY_FIXED_ONOFF}")  # {str_alarm_time}
 
             # 2. 성채 알람
             try:
@@ -906,7 +909,7 @@ class Alarm(commands.Cog):
                 # 오늘이 성채 날짜가 아니면 통과
                 weekday_no = int(str_weekday_no)
                 if now_weekday_no != weekday_no:
-                    self.logger.info(f"오늘은 {cWEEKDAYS[weekday_no]}이 아님.")
+                    # self.logger.info(f"오늘은 {cWEEKDAYS[weekday_no]}이 아님.")
                     continue
 
                 for str_alarm_time, boss_list in weekday_alarm_dic.items():
@@ -950,7 +953,7 @@ class Alarm(commands.Cog):
                     rm = round((time_diff_seconds // 60) % 60)
                     rs = round(time_diff_seconds % 60)
                     # self.logger.info(f"보탐시간과의 차이 : {rh:02}:{rm:02}:{rs:02}")
-                    self.logger.info(f"{rh:02}:{rm:02}:{rs:02} 전 - {cCMD_ALARM_WEEKDAY_FIXED_ONOFF}")  # {str_alarm_time}
+                    # self.logger.info(f"{rh:02}:{rm:02}:{rs:02} 전 - {cCMD_ALARM_WEEKDAY_FIXED_ONOFF}")  # {str_alarm_time}
 
             # 3. 인터벌 보스
             """
@@ -1011,7 +1014,7 @@ class Alarm(commands.Cog):
                 rm = round((time_diff_seconds // 60) % 60)
                 rs = round(time_diff_seconds % 60)
                 # self.logger.info(f"보탐시간과의 차이 : {rh:02}:{rm:02}:{rs:02}")
-                self.logger.info(f"{rh:02}:{rm:02}:{rs:02} - {str_boss_list}")  # {str_alarm_time}
+                # self.logger.info(f"{rh:02}:{rm:02}:{rs:02} - {str_boss_list}")  # {str_alarm_time}
 
             # 인터벌 타입 보스는 알람 목록에서 지워야 한다.
             for alarm_key in to_remove:
@@ -1078,7 +1081,7 @@ class Alarm(commands.Cog):
                 rm = round((time_diff_seconds // 60) % 60)
                 rs = round(time_diff_seconds % 60)
                 # self.logger.info(f"알람시간과의 차이 : {rh:02}:{rm:02}:{rs:02}")
-                self.logger.info(f"{rh:02}:{rm:02}:{rs:02} - {str_today_schedule_name_list}")  # {str_alarm_time}
+                # self.logger.info(f"{rh:02}:{rm:02}:{rs:02} - {str_today_schedule_name_list}")  # {str_alarm_time}
 
             # 알람 목록에서 지워야 한다.
             for alarm_key in to_remove:

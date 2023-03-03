@@ -87,7 +87,7 @@ class BtDb:
             self.logger.info(f"디스코드서버ID:{discord_guild_id} 로 등록된 오딘길드가 없음.")
             return False, None
         odin_guild_dic = doc.to_dict()
-        self.logger.info(f"get_odin_guild_info : {odin_guild_dic}")
+        # self.logger.info(f"get_odin_guild_info : {odin_guild_dic}")
         return True, odin_guild_dic
 
     def get_all_odin_guilds_info(self) -> (bool, dict):
@@ -259,7 +259,7 @@ class BtDb:
                 else:
                     alarm_dic[str_boss_fixed_time].append(boss[kBOSS_NAME])
 
-        self.logger.info(alarm_dic)
+        # self.logger.info(alarm_dic)
         return alarm_dic
 
     def get_weekday_fiexed_alarm_info_from_master(self) -> dict:

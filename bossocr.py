@@ -19,7 +19,7 @@ def remove_background(image):
     # 남은 시간 색상 범위 (Blue, Green, Red)
 
     # 하늘색
-    lower = np.array([90, 72, 5])
+    lower = np.array([50, 40, 5])
     upper = np.array([255, 220, 60])
 
     # 해당 색상 범위의 영역만 mask로 추출
@@ -328,6 +328,9 @@ def get_ocr_boss_time_list_by_bytes(image_bytes: bytes, bossname_list) -> (str, 
     # 문자열 정리
     screenshot_time = screenshot_time.replace(" ", "")
     screenshot_time = screenshot_time.replace(":", "")
+    screenshot_time = screenshot_time.replace(".", "")
+    screenshot_time = screenshot_time.replace(";", "")
+    screenshot_time = screenshot_time.replace(",", "")
     for boss_time_pair in final_results:
         # 보스명 및 남은시간에 스페이스 있으면 제거
         boss_time_pair[0] = boss_time_pair[0].replace(" ", "")
