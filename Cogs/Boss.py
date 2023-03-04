@@ -31,7 +31,7 @@ class Boss(commands.Cog):
         :param args: args[0] : 보스명
         :return: None
         '''
-        self.logging.info(f"{cCMD_BOSS_INFO} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_BOSS_INFO} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):

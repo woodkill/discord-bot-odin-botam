@@ -1,14 +1,5 @@
-import datetime
 import logging.config
-import discord
-from discord.ext import commands
-# from discord import Intents
-# from discord import Game
-# from discord import Status
-# from discord import Object
 import BtDb
-from const_key import *
-from const_data import *
 from common import *
 
 

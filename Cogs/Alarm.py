@@ -50,7 +50,7 @@ class Alarm(commands.Cog):
         :param ctx:
         :return:
         """
-        self.logging.info(f"{cCMD_ALARM_TIMER} {args} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_ALARM_TIMER} {args} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -99,7 +99,7 @@ class Alarm(commands.Cog):
         :param ctx:
         :return:
         """
-        self.logging.info(f"{cCMD_ALARM_LIST} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_ALARM_LIST} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -252,7 +252,7 @@ class Alarm(commands.Cog):
         :param args:
         :return:
         """
-        self.logging.info(f"{cCMD_ALARM_TODAY} {args} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_ALARM_TODAY} {args} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -339,7 +339,7 @@ class Alarm(commands.Cog):
         :param ctx:
         :return:
         """
-        self.logging.info(f"{cCMD_ALARM_REGISTER} {args} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_ALARM_REGISTER} {args} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -432,7 +432,7 @@ class Alarm(commands.Cog):
         :param ctx:
         :return:
         """
-        self.logging.info(f"{cCMD_ALARM_TIMETABLE} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_ALARM_TIMETABLE} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -589,7 +589,7 @@ class Alarm(commands.Cog):
         :param ctx: Context
         :return:
         """
-        self.logging.info(f"{cCMD_ALARM_DAILY_FIXED_ONOFF} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_ALARM_DAILY_FIXED_ONOFF} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -702,7 +702,7 @@ class Alarm(commands.Cog):
         :param ctx: Context
         :return:
         """
-        self.logging.info(f"{cCMD_ALARM_WEEKDAY_FIXED_ONOFF} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_ALARM_WEEKDAY_FIXED_ONOFF} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
