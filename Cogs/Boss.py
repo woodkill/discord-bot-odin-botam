@@ -45,19 +45,31 @@ class Boss(commands.Cog):
         # self.logger.debug(f"{cCMD_BOSS_INFO} 명령어 갯수 통과")
 
         if len(args) == 0: # 보스명을 인자로 달지 않은 경우
+
             boss_list = self.db.get_boss_list() # 보스정보를 소팅해서 받는다.
             if boss_list is None:
                 await send_error_message(ctx, f"보스정보가 없습니다. 관리자에게 문의하세요.")
-            embed = discord.Embed(title=f"보스목록", description=f"모든 보스의 간략한 정보입니다.", color=discord.Color.purple())
-            # temp_boss_list = []  # 보스명 리스트 콘솔창에 출력용
+
+            # embed 버전
+            # embed = discord.Embed(title=f"보스목록", description=f"모든 보스의 간략한 정보입니다.", color=discord.Color.purple())
+            # for boss in boss_list:
+            #     str_boss_alias = ",".join(boss[kBOSS_ALIAS])
+            #     embed.add_field(name=boss[kBOSS_NAME],
+            #                     value=f"{boss[kCHAP_NAME]} / {boss[kBOSS_LEVEL]}\n별명 : {str_boss_alias}", inline=True)
+            # await ctx.send(embed=embed)
+
+            # 코드블럭 버전
+            message = u""
             for boss in boss_list:
-                # temp_boss_list.append(boss[kBOSS_NAME])  # 보스명 리스트 콘솔창에 출력용
                 str_boss_alias = ",".join(boss[kBOSS_ALIAS])
-                embed.add_field(name=boss[kBOSS_NAME],
-                                value=f"{boss[kCHAP_NAME]} / {boss[kBOSS_LEVEL]}\n별명 : {str_boss_alias}", inline=True)
-            # self.logger.info(temp_boss_list)  # 보스명 리스트 콘솔창에 출력용
-            await ctx.send(embed=embed)
+                message += f"{boss[kBOSS_NAME]}({boss[kCHAP_NAME]}/{boss[kBOSS_LEVEL]}) : {str_boss_alias}\n"
+            message = message[:-1]
+            await send_ok_message(ctx, message)
+
             return
+
+
+
 
         # 보스명이 인자로 넘어온 경우 : 보스명에 해당하는 보스정보 가져오기
         odin_boss_name = args[0]
