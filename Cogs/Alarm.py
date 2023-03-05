@@ -120,7 +120,10 @@ class Alarm(commands.Cog):
             await send_error_message(ctx, f"등록된 알람이 없습니다.")
             return
 
-        embed_list = []
+        embed_list = []  # 1111
+        message = u""  # 2222
+        prefix = "-" * 3 + " "
+        postfix = " " + "-" * 20
 
         # 1. 월보 알람 검사
         try:
@@ -131,16 +134,20 @@ class Alarm(commands.Cog):
 
         if len(guild_daily_fixed_alarm_dic) > 0:
 
+            # 1111
             daily_fixed_embed = discord.Embed(
                 title=cCMD_ALARM_DAILY_FIXED_ONOFF,
                 description=u"매일",
                 color=discord.Color.blue())
+            # 2222
+            message += f"{prefix}{cCMD_ALARM_DAILY_FIXED_ONOFF} 매일{postfix}\n"
 
             for str_time, boss_list in sorted(guild_daily_fixed_alarm_dic.items()):
                 # daily_fixed_embed.add_field(name=str_time, value=', '.join(boss_list), inline=True)
                 daily_fixed_embed.add_field(name=str_time, value='', inline=True)
+                message += f"{str_time}\n"
 
-            embed_list.append(daily_fixed_embed)
+            embed_list.append(daily_fixed_embed)  # 1111
 
         # 2. 성채 알람 검사
         try:
@@ -151,22 +158,27 @@ class Alarm(commands.Cog):
 
         if len(guild_weekday_fixed_alarm_dic) > 0:
 
+            # 1111
             weekday_fixed_embed = discord.Embed(
                 title=cCMD_ALARM_WEEKDAY_FIXED_ONOFF,
                 description=u"",
                 color=discord.Color.yellow())
 
+            # 2222
+            message += f"{prefix}{cCMD_ALARM_WEEKDAY_FIXED_ONOFF}{postfix}\n"
+
             for str_weekday_no, time_alarm_dic in guild_weekday_fixed_alarm_dic.items():
                 str_weekday = cWEEKDAYS[int(str_weekday_no)]
-                message = ""
+                tempmsg = ""
                 for t, b in time_alarm_dic.items():
                     # 이 아래 두 줄은 성채보스명까지 보여주는 방식
-                    # message += f"{', '.join(b)}\n"
-                    # weekday_fixed_embed.add_field(name=f"{str_weekday} {t}", value=message, inline=True)
+                    # tempmsg += f"{', '.join(b)}\n"
+                    # weekday_fixed_embed.add_field(name=f"{str_weekday} {t}", value=tempmsg, inline=True)
                     # 이 아래 한 줄은 보스명 안 보여주는 방식
-                    weekday_fixed_embed.add_field(name=f"{str_weekday} {t}", value="", inline=True)
+                    weekday_fixed_embed.add_field(name=f"{str_weekday} {t}", value="", inline=True) # 1111
+                    message += f"{str_weekday} {t}\n" # 2222
 
-            embed_list.append(weekday_fixed_embed)
+            embed_list.append(weekday_fixed_embed) # 1111
 
         # 3. 필보 알람 검사
         """
@@ -184,10 +196,14 @@ class Alarm(commands.Cog):
 
         if len(guild_interval_alarm_dic) > 0:
 
+            # 1111
             interval_boss_embed = discord.Embed(
                 title=cCMD_ALARM_REGISTER,
                 description=u"",
                 color=discord.Color.red())
+
+            # 2222
+            message += f"{prefix}{cCMD_ALARM_REGISTER}{postfix}\n"
 
             # self.logger.info(dict(sorted(guild_interval_alarm_dic.items())))
 
@@ -202,7 +218,8 @@ class Alarm(commands.Cog):
                     # 이건 이름 안 보여주는 방식
                     # interval_boss_embed.add_field(name=boss_name, value=f"{nd} {nt}", inline=True)
                     # 이건 구어체 방식 마우스 위로 대면 날짜 나옴
-                    interval_boss_embed.add_field(name=today_alarm_name, value=f"{util_str}", inline=True)
+                    interval_boss_embed.add_field(name=today_alarm_name, value=f"{util_str}", inline=True) # 1111
+                    message += f"{today_alarm_name} : {util_str}\n" # 2222
 
             embed_list.append(interval_boss_embed)
 
@@ -216,10 +233,14 @@ class Alarm(commands.Cog):
 
         if len(guild_today_alarm_dic) > 0:
 
+            # 1111
             today_alarm_embed = discord.Embed(
                 title=cCMD_ALARM_TODAY,
                 description=u"",
                 color=discord.Color.purple())
+
+            # 2222
+            message += f"{prefix}{cCMD_ALARM_TODAY}{postfix}\n"
 
             # self.logger.info(dict(sorted(guild_today_alarm_dic.items())))
 
@@ -235,12 +256,18 @@ class Alarm(commands.Cog):
                     # 이건 이름 안 보여주는 방식
                     # interval_boss_embed.add_field(name=today_alarm_name, value=f"{nd} {nt}", inline=True)
                     # 이건 구어체 방식 마우스 위로 대면 날짜 나옴
-                    today_alarm_embed.add_field(name=today_alarm_name, value=f"{util_str}", inline=True)
+                    today_alarm_embed.add_field(name=today_alarm_name, value=f"{util_str}", inline=True)  # 1111
+                    message += f"{today_alarm_name} : {util_str}"  # 2222
 
             embed_list.append(today_alarm_embed)
 
+        # 여기서 1111, 2222 중에 하나만 살린다.
         if len(embed_list) > 0:
-            await ctx.send(embeds=embed_list)
+            # 1111
+            # await ctx.send(embeds=embed_list)
+            # 2222
+            message = message[:-1]
+            await send_ok_message(ctx, message)
         else:
             await send_ok_message(ctx, u"현재 켜져 있는 알람이 없습니다.")
 
@@ -433,6 +460,8 @@ class Alarm(commands.Cog):
         :return:
         """
         self.logger.info(f"{cCMD_ALARM_TIMETABLE} by {ctx.message.author}")
+
+        # TODO : 첨부화일 여러개 올리면 한꺼번에 처리하도록 수정
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
