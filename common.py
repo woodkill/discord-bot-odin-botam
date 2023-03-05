@@ -45,6 +45,19 @@ def to_guide_code_block(msg: str) -> str:
            f"```"
 
 
+async def send_common_message(ctx: commands.Context, msg:str):
+    """
+    흰색 코드 블럭 문자열로 context 채널에 전송
+    :param ctx:
+    :param msg:
+    :return:
+    """
+    lapping_msg = f"```\n" \
+                  f"{msg}\n" \
+                  f"```"
+    await ctx.send(lapping_msg)
+
+
 async def send_ok_message(ctx: commands.Context, msg: str):
     """
     파란색 코드 블럭 문자열로 context 채널에 전송

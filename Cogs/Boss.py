@@ -62,9 +62,9 @@ class Boss(commands.Cog):
             message = u""
             for boss in boss_list:
                 str_boss_alias = ",".join(boss[kBOSS_ALIAS])
-                message += f"{boss[kBOSS_NAME]}({boss[kCHAP_NAME]}/{boss[kBOSS_LEVEL]}) : {str_boss_alias}\n"
+                message += f"{boss[kBOSS_NAME]}  ({boss[kCHAP_NAME]}/{boss[kBOSS_LEVEL]}) : {str_boss_alias}\n"
             message = message[:-1]
-            await send_ok_message(ctx, message)
+            await send_common_message(ctx, message)
 
             return
 

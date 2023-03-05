@@ -310,6 +310,7 @@ class BtDb:
 
     def set_guild_alarms(self, discord_guild_id: int, guild_alarm_dic: dict):
         """
+
         :param discord_guild_id:
         :param guild_alarm_dic:
         :return:
