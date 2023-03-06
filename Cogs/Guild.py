@@ -16,7 +16,7 @@ class Guild(commands.Cog):
     def __init__(self, bot: BtBot) -> None:
         self.bot = bot
         self.db: BtDb.BtDb = bot.db
-        self.logger = logging.getLogger('cog')
+        self.logger = logging.getLogger('bot.guild')
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
@@ -65,7 +65,6 @@ class Guild(commands.Cog):
         if len(args) > 2 or len(args) == 1: # 인자가 없거나 2개이어야 함
             await send_usage_embed(ctx, cCMD_GUILD_REGISTER)
             return
-        # self.logger.debug(f"{cCMD_GUILD_REGISTER} 명령어 갯수 통과")
 
         if len(args) == 0:  # 길드확인용으로 쓰이는 경우
             success, odin_guild_dic = self.db.get_odin_guild_info(ctx.guild.id)
@@ -110,5 +109,5 @@ class Guild(commands.Cog):
 
 
 async def setup(bot: BtBot) -> None:
-    logging.getLogger('cog').info(f"setup Guild Cog")
+    logging.getLogger('bot.guild').info(f"setup Guild Cog")
     await bot.add_cog(Guild(bot))

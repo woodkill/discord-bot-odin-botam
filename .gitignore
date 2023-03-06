@@ -288,5 +288,6 @@ cython_debug/
 # firebase
 firebase.json
 
-
+# log directory
+/logs
 

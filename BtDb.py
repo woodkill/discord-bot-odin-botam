@@ -13,7 +13,7 @@ class BtDb:
         self.app = firebase_admin.initialize_app(self.cred)
         self.db = firestore.client()
         # logger setting
-        self.logger = logging.getLogger('db')
+        self.logger = logging.getLogger('bot.db')
         # master data storage
         self.serverDic: dict = {}
         self.bossDic: dict = {}
@@ -29,7 +29,7 @@ class BtDb:
         """
         doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODIN_SERVER).get()
         server_dic = doc.to_dict()
-        # self.logger.info(f"오딘서버목록 로딩 완료 : {server_dic}")
+        # self.logger.debug(f"오딘서버목록 로딩 완료 : {server_dic}")
         self.serverDic = server_dic
         return True
 
@@ -41,10 +41,10 @@ class BtDb:
         try:
             doc = self.db.collection(kCOL_ODINDATA).document(kDOC_ODIN_BOSS).get()
         except Exception as e:
-            self.logger.debug(e)
+            self.logger.error(e)
             return False
         boss_dic = doc.to_dict()
-        # self.logger.info(f"오딘보스목록 로딩 완료 : {boss_dic}")
+        # self.logger.debug(f"오딘보스목록 로딩 완료 : {boss_dic}")
         self.bossDic = boss_dic
         return True
 
@@ -55,7 +55,7 @@ class BtDb:
         :return: odin_server_name 과 같은 오딘서버가 있는지 여부
         """
         r = {server[1][kSERVER_NAME] for server in self.serverDic.items() if server[1][kSERVER_NAME] == odin_server_name}
-        self.logger.info(r)
+        # self.logger.debug(r)
         return len(r) != 0
 
     def check_valid_boss_name(self, arg_boss_name: str) -> bool:
@@ -81,13 +81,13 @@ class BtDb:
         try:
             doc = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).get()
         except Exception as e:
-            self.logger.debug(e)
+            self.logger.error(e)
             return
         if not doc.exists:
-            self.logger.info(f"디스코드서버ID:{discord_guild_id} 로 등록된 오딘길드가 없음.")
+            self.logger.warning(f"디스코드서버ID:{discord_guild_id} 로 등록된 오딘길드가 없음.")
             return False, None
         odin_guild_dic = doc.to_dict()
-        # self.logger.info(f"get_odin_guild_info : {odin_guild_dic}")
+        # self.logger.debug(f"get_odin_guild_info : {odin_guild_dic}")
         return True, odin_guild_dic
 
     def get_all_odin_guilds_info(self) -> (bool, dict):
@@ -99,12 +99,12 @@ class BtDb:
         try:
             docs = self.db.collection(kCOL_ODINGUILD).stream()
         except Exception as e:
-            self.logger.debug(e)
+            self.logger.error(e)
             return False, None
-        # self.logger.info(f"{docs}")
+        # self.logger.debug(f"{docs}")
         for doc in docs:
             odin_guilds_dic[int(doc.id)] = doc.to_dict()
-        # self.logger.info(f"{odin_guilds_dic}")
+        # self.logger.debug(f"{odin_guilds_dic}")
         return True, odin_guilds_dic
 
     def set_odin_guild_info(self,
@@ -131,7 +131,7 @@ class BtDb:
         try:
             col_ref = self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).set(guild_info, merge=True)
         except Exception as e:
-            self.logger.debug(e)
+            self.logger.error(e)
             return False, None
         return True, guild_info
 
@@ -140,7 +140,7 @@ class BtDb:
         try:
             self.db.collection(kCOL_ODINGUILD).document(str_discord_guild_id).delete()
         except Exception as e:
-            self.logger.debug(e)
+            self.logger.error(e)
 
     def set_odin_guild_register_alarm_channel(self, discord_guild_id: int, channel_id: int) -> bool:
         """
@@ -155,7 +155,7 @@ class BtDb:
                 kFLD_CHANNEL_ID: channel_id
             }, merge=True)
         except Exception as e:
-            self.logger.debug(e)
+            self.logger.error(e)
             return False
         return True
 
@@ -164,9 +164,9 @@ class BtDb:
         보스명 문자열로만 되어 있는 리스트를 만들어서 리턴
         :return:
         """
-        # self.logger.info(self.bossDic)
+        # self.logger.debug(self.bossDic)
         if len(self.bossDic) == 0:
-            self.logger.debug(f"self.bossDic 이 비어있습니다.")
+            self.logger.warning(f"self.bossDic 이 비어있습니다.")
             return None
         bossname_list = []
         for item in self.bossDic.values():
@@ -178,9 +178,9 @@ class BtDb:
         보스정보를 key를 제외하고 리스트로 리턴
         :return: 보스정보 dic의 list
         """
-        # self.logger.info(self.bossDic)
+        # self.logger.debug(self.bossDic)
         if len(self.bossDic) == 0:
-            self.logger.debug(f"self.bossDic 이 비어있습니다.")
+            self.logger.warning(f"self.bossDic 이 비어있습니다.")
             return None
         boss_list = list(self.bossDic.values())
         return sorted(boss_list, key=lambda x: (x[kCHAP_ORDER], x[kBOSS_LEVEL], x[kBOSS_ORDER]))
@@ -195,7 +195,7 @@ class BtDb:
         'chapter/name' : 지역명/보스명
         'item' : 보스정보dic
         """
-        # self.logger.info(self.bossDic)
+        # self.logger.debug(self.bossDic)
         if len(self.bossDic) == 0:
             return None, None
         # self.bossDic의 보스명과 보스별명을 검사하여 해당 보스키값과 정보dict를 리턴한다.
@@ -246,7 +246,7 @@ class BtDb:
           ]
         }
         """
-        # self.logger.info(f"{self.bossDic}")
+        # self.logger.debug(f"{self.bossDic}")
 
         alarm_dic = {}  # 요기다가 만들어서 리턴한다.
         for key, boss in self.bossDic.items():  # 각 보스의 정보를 하나씩 가져와서...
@@ -259,7 +259,7 @@ class BtDb:
                 else:
                     alarm_dic[str_boss_fixed_time].append(boss[kBOSS_NAME])
 
-        # self.logger.info(alarm_dic)
+        # self.logger.debug(alarm_dic)
         return alarm_dic
 
     def get_weekday_fiexed_alarm_info_from_master(self) -> dict:

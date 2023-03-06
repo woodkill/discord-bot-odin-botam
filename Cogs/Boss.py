@@ -17,7 +17,7 @@ class Boss(commands.Cog):
     def __init__(self, bot: BtBot) -> None:
         self.bot = bot
         self.db: BtDb.BtDb = bot.db
-        self.logger = logging.getLogger('cog')
+        self.logger = logging.getLogger('bot.boss')
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
@@ -42,7 +42,6 @@ class Boss(commands.Cog):
         if len(args) > 1:
             await send_usage_embed(ctx, cCMD_BOSS_INFO)
             return
-        # self.logger.debug(f"{cCMD_BOSS_INFO} 명령어 갯수 통과")
 
         if len(args) == 0: # 보스명을 인자로 달지 않은 경우
 
@@ -125,5 +124,5 @@ class Boss(commands.Cog):
         await ctx.send(file=file, embed=embed)
 
 async def setup(bot: BtBot) -> None:
-    logging.getLogger('cog').info(f"setup Boss Cog")
+    logging.getLogger('bot.boss').info(f"setup Boss Cog")
     await bot.add_cog(Boss(bot))
