@@ -900,6 +900,9 @@ class Alarm(commands.Cog):
             channel_id = guild_dic[kFLD_CHANNEL_ID]
             channel = self.bot.get_channel(channel_id)
 
+            if channel is None:
+                continue
+
             # 이 길드의 알람 간격
             try:
                 guild_timer_list = guild_dic[kFLD_ALARM_TIMERS]

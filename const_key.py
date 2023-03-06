@@ -3,6 +3,7 @@
 """
 kCOL_ODINDATA = "OdinData"
 kCOL_ODINGUILD = u'OdinGuild'
+kCOL_ODINBOTAMCHULCHECK = u'OdinBotamChulCheck'
 kCOL_BOSS = u'Boss'
 
 """
@@ -23,6 +24,7 @@ kFLD_ALARMS = u"alarms"
 kFLD_ALARM_TIMERS = u"alarmTimers"
 kFLD_ALARMED = u"alarmed"
 kFLD_BOSS_LIST = u"bossList"
+kFLD_CHULCHEK = u"chulChuck"
 
 """
  dictionary key

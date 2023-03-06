@@ -206,6 +206,23 @@ def is_hh_mm_timedelta_format(time_str: str) -> bool:
     return True
 
 
+def get_yearmonthday_korean(timedelta_str: str) -> (int, int, int):
+    """
+    문자열을 분석, 쪼개서 리턴하는 함수.
+    :param timedelta_str: "0년0월0일" 형식의 문자열
+    :return: 년, 월, 일
+    """
+    pattern = r'^(?P<year>(\d+)년)?\s*(?P<month>(\d+)월)?\s*(?P<day>(\d+)일)?$'
+    match = re.match(pattern, timedelta_str)
+    if not match:
+        return 0, 0, 0
+    g = match.groups()
+    y = 0 if g[1] is None else int(g[1])
+    m = 0 if g[3] is None else int(g[3])
+    d = 0 if g[5] is None else int(g[5])
+    return y, m, d
+
+
 def get_separated_timedelta_korean(timedelta_str: str) -> (int, int, int, int):
     """
     시간 문자열을 분석, 쪼개서 리턴하는 함수.

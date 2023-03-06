@@ -206,25 +206,6 @@ class BtDb:
                 return key, item
         return None, None
 
-    # def create_daily_fixed_boss_alarm_dict(self) -> dict:
-    #     '''
-    #     보스정보 dict에서 고정타임 보스에 해당하는 정보를 찾아서 dict로 반환해 준다.
-    #     :return: {"시각":{"alarmed":True|False, "bossList":[보스명리스트]}},, ...}
-    #     '''
-    #     # boss_Dic에서 타입이 고정타입인 것만 추려내서...
-    #     fixed_boss_dict = {k: v for k, v in self.bossDic.items() if v[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED}
-    #     alarm_dict = {} # 고정보스 알람 dict를 만든다.
-    #     for key, bossInfo in fixed_boss_dict.items():
-    #         times = bossInfo[kBOSS_FIXED_TIME] # ["12:00", "22:00"]
-    #         for time in times: # "12:00"
-    #             if time not in alarm_dict:
-    #                 # 이 시간의 알람 dict가 없으면 새로 만들고, 기본 값 세팅
-    #                 alarm_dict[time] = {}
-    #                 alarm_dict[time][kFLD_ALARMED] = False # "alarmed":False
-    #                 alarm_dict[time][kFLD_BOSS_LIST] = [] # "bossList":[]
-    #             alarm_dict[time][kFLD_BOSS_LIST].append(bossInfo[kBOSS_NAME])
-    #     return alarm_dict
-
     def get_daily_fiexed_alarm_info_from_master(self) -> dict:
         """
         월보 알람 정보 dic을 만들어서 리턴한다.
@@ -337,6 +318,16 @@ class BtDb:
             })
         except Exception as e:
             self.logger.debug(e)
+
+    def get_guild_chulcheck(self, discord_guild_id: int, chulcheck_key: str) -> list:
+        """
+
+        :param discord_guild_id:
+        :param chulcheck_key:
+        :return:
+        """
+        str_discord_guild_id = str(discord_guild_id)
+        return []
 
     #
     # def delete_boss_collection(self, discord_guild_id, col_ref, batch_size):
