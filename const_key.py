@@ -27,7 +27,7 @@ kFLD_BOSS_LIST = u"bossList"
 kFLD_CHULCHEK = u"chulChuck"
 
 kFLD_CC_GUILD = u"guild"
-kFLD_CC_DATE = u"date"
+kFLD_CC_DATETIME = u"datetime"
 kFLD_CC_BOSSNAME = u"bossName"
 kFLD_CC_MEMBERS = u"members"
 

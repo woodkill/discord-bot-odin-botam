@@ -18,6 +18,13 @@ cKEY_TODAY_SCHDULE_ALARM = "3"  # 이건 보스타입은 아니지만, alarms di
 '''
 cWEEKDAYS = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
 
+cTIME_FORMAT_FIXED_TYPE = "%H:%M"
+cTIME_FORMAT_INTERVAL_TYPE = "%Y-%m-%d %H:%M:%S"
+cTIME_FORMAT_TIME6DIGIT = "%H%M%S"
+cTIME_FORMAT_CHULCHECK_KEY = "%Y-%m-%d %H:%M:%S"
+cTIME_FORMAT_WITH_TIMEZONE = "%Y-%m-%d %H:%M:%S %Z%z"
+cTIME_FORMAT_KOREAN_MMDD = "%m월%d일"
+
 '''
 명령어
 '''

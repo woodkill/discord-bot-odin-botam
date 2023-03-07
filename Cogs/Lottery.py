@@ -2,6 +2,7 @@ import logging
 from discord.ext import commands
 
 import datetime
+from pytz import timezone, utc
 
 import BtBot
 import BtDb
@@ -9,7 +10,8 @@ import BtDb
 from common import *
 from const_data import *
 
-cTIME_FORMAT_CHULCHECK_KEY = "%Y-%m-%d"
+KST = timezone('Asia/Seoul')
+UTC = utc
 
 
 class Lottery(commands.Cog):
@@ -52,12 +54,23 @@ class Lottery(commands.Cog):
             await send_usage_embed(ctx, cCMD_LOTTERY_CULCHECK)
             return
 
-        # 첫번째 인자가 보스명인지 검사
+        # 첫번째 인자가 보스명인지, 보스명이라면 고정타입 보스가 아닌지 검사
         arg_boss_name = args[0]
         boss_key, boss = self.db.get_boss_item_by_name(args[0])
         if boss_key is None:
             await send_error_message(ctx, f"{arg_boss_name} : 존재하지 않는 보스명입니다.")
             return
+
+        # 보스 타입별로 쿨타임 설정 # TODO: 인터벌 타입은 사전에서 가져오고, 고정타입은 24시간으로.. 성채는 48시간으로...
+
+        if boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
+            cool_dt = datetime.timedelta(days=0, hours=48, minutes=0, seconds=0)
+        elif boss[kBOSS_TYPE] == cBOSS_TYPE_INTERVAL:
+            d, h, m, s = get_separated_timedelta_ddhhmm(boss[kBOSS_INTERVAL])
+            cool_dt = datetime.timedelta(days=d, hours=h, minutes=m, seconds=0)
+        else:  # boss[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED:
+            cool_dt = datetime.timedelta(days=0, hours=24, minutes=0, seconds=0)
+
         # 인자로 넘어온 보스명이 별명일 수도 있으므로 정식명을 사용한다.
         boss_name = boss[kBOSS_NAME]
 
@@ -81,15 +94,35 @@ class Lottery(commands.Cog):
             return
 
         # 두번째 인자가 없으면..
-        str_now_date = datetime.datetime.now().date().strftime(cTIME_FORMAT_CHULCHECK_KEY)
+        now = datetime.datetime.utcnow()  # 시간은 항상 UTC 시간으로 저장하고 표시할 때만 한국시간으로...
+        utc_now = now.astimezone(UTC)
+        self.logger.debug(now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
+        self.logger.debug(utc_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
+
+        # 이건 pytz 기능 테스트용
+        # utc_now = UTC.localize(now)
+        # kst_now = KST.localize(now)
+        # self.logger.debug(utc_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
+        # self.logger.debug(kst_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
+
         guild_id = ctx.guild.id
 
-        # 먼저 오늘 날짜의 해당 보스명 출첵이 있으면 받아오고 없으면 만든다.
-        chulcheck_dict = self.db.get_chulcheck(guild_id, str_now_date, boss_name)
-        if chulcheck_dict is None:
-            chulcheck_dict = self.db.add_chulcheck(guild_id, str_now_date, boss_name, [])
+        # 먼저 가장 최근의 해당 보스명 출첵이 있으면 받아오고 없으면 만든다.
+        # 있더라도 해당 보스의 쿨타임보다 크면 새로 만든다.
+        chulcheck_dict = self.db.get_lastone_chulcheck(guild_id, boss_name)
 
-        self.logger.debug(chulcheck_dict)
+        if chulcheck_dict is None:  # 여기에 조건 추가
+            chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
+            self.logger.debug(chulcheck_dict)
+        else:
+            td = utc_now - chulcheck_dict[kFLD_CC_DATETIME]
+            if td.total_seconds() > cool_dt.total_seconds():
+                chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
+                self.logger.debug(chulcheck_dict)
+
+        utc_chulcheck_time = chulcheck_dict[kFLD_CC_DATETIME]
+        kst_chulcheck_time = utc_chulcheck_time.astimezone(KST)
+        str_dp_chulcheck_time = kst_chulcheck_time.strftime(cTIME_FORMAT_KOREAN_MMDD)
 
         class Buttons(discord.ui.View):
             def __init__(self, bot: BtBot, timeout=180):
@@ -103,7 +136,14 @@ class Lottery(commands.Cog):
                 chulcheck_dict[kFLD_CC_MEMBERS].append(guild_member_name)
                 on_members = set(chulcheck_dict[kFLD_CC_MEMBERS])
                 str_on_members = ", ".join(on_members)
-                await interaction.response.Ï(content=f"```{on_members}```")
+                # TODO : firestore에 넣는 루틴
+                message = f"```ansi\n"\
+                  f"\033[34;1m"\
+                  f"{boss_name}  {str_dp_chulcheck_time}\n"\
+                  f"\033[0m\n"\
+                  f"{str_on_members}\n"\
+                  f"```"
+                await interaction.response.edit_message(content=message)
 
             @discord.ui.button(label="빼줘", style=discord.ButtonStyle.red)
             async def chulcheck_off(self, interaction: discord.Interaction, button: discord.ui.Button, ):
@@ -113,7 +153,13 @@ class Lottery(commands.Cog):
         view = Buttons(self.bot)
         members = set(chulcheck_dict[kFLD_CC_MEMBERS])
         str_members = ", ".join(members)
-        await ctx.channel.send(f"```{str_members}```", view=view)
+        message = f"```ansi\n"\
+                  f"\033[34;1m"\
+                  f"{boss_name}  {str_dp_chulcheck_time}\n"\
+                  f"\033[0m\n"\
+                  f"{str_members}\n"\
+                  f"```"
+        await ctx.channel.send(message, view=view)
 
 
 async def setup(bot: BtBot) -> None:

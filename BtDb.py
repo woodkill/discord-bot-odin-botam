@@ -1,11 +1,16 @@
 import logging
 import datetime
+from pytz import timezone, utc
 
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from firebase_admin import firestore_async
 
 from const_data import *
+
+KST = timezone('Asia/Seoul')
+UTC = utc
 
 
 class BtDb:
@@ -15,6 +20,8 @@ class BtDb:
         self.cred = credentials.Certificate('firebase.json')
         self.app = firebase_admin.initialize_app(self.cred)
         self.db = firestore.client()
+        # TODO: firestore async와 sync 차이점?
+        self.asyncdb = firestore_async.client()
         # logger setting
         self.logger = logging.getLogger('bot.db')
         # master data storage
@@ -322,24 +329,41 @@ class BtDb:
         except Exception as e:
             self.logger.debug(e)
 
-    def get_chulcheck(self, guild_id: int, str_botam_date: str, boss_name: str):
+    def get_lastone_chulcheck(self, guild_id: int, boss_name: str):
+        """
+
+        :param guild_id:
+        :param boss_name:
+        :return:
+        """
         try:
-            docs = self.db.collection(kCOL_ODINBOTAMCHULCHECK)\
-                .where(kFLD_CC_DATE, u'==', str_botam_date)\
-                .where(kFLD_CC_BOSSNAME, u'==', boss_name).stream()
+            query_snapshot = self.db.collection(kCOL_ODINBOTAMCHULCHECK)\
+                .where(kFLD_CC_GUILD, u"==", guild_id)\
+                .where(kFLD_CC_BOSSNAME, u'==', boss_name)\
+                .order_by(kFLD_CC_DATETIME).limit_to_last(1).get()
         except Exception as e:
             self.logger.error(e)
             return None
 
-        if len(docs) != 1:
+        if len(query_snapshot) == 0:
             return None
-        self.logger.debug(docs[0].to_dict())
-        return docs[0].to_dict()
 
-    def add_chulcheck(self, guild_id: int, botam_date: datetime, boss_name: str, cc_members: list):
+        self.logger.debug(query_snapshot[0].to_dict())
+
+        return query_snapshot[0].to_dict()
+
+    def add_chulcheck(self, guild_id: int, botam_datetime: datetime.datetime, boss_name: str, cc_members: list):
+        """
+
+        :param guild_id:
+        :param botam_datetime:
+        :param boss_name:
+        :param cc_members:
+        :return:
+        """
         chulcheck_dic = {
             kFLD_CC_GUILD: guild_id,
-            kFLD_CC_DATE: botam_date,
+            kFLD_CC_DATETIME: botam_datetime,
             kFLD_CC_BOSSNAME: boss_name,
             kFLD_CC_MEMBERS: cc_members
         }
@@ -348,6 +372,7 @@ class BtDb:
         except Exception as e:
             self.logger.error(e)
             return None
+
         return chulcheck_dic
 
     #

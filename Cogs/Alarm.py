@@ -17,10 +17,6 @@ import BtDb
 
 cCHECK_ALARM_INTERVAL_SECONDS = 1
 
-cTIME_FORMAT_FIXED_TYPE = "%H:%M"
-cTIME_FORMAT_INTERVAL_TYPE = "%Y-%m-%d %H:%M:%S"
-cTIME_FORMAT_TIME6DIGIT = "%H%M%S"
-
 
 class Alarm(commands.Cog):
 
