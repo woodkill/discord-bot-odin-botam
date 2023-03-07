@@ -64,33 +64,32 @@ class Lottery(commands.Cog):
         # 두번째 인자가 있으면
         if len(args) == 2:
 
-            #  형식 체크
-            y, m, d = get_yearmonthday_korean(args[1])
-            if d == 0:  # 형식이 안맞거나 최소한 날짜를 잘못 입력한 것
-                await send_error_message(ctx, u"몇년몇월몇일 혹은 몇월몇일 혹은 몇일 이렇게 입력하세요.")
-                return
+            # #  형식 체크
+            # y, m, d = get_yearmonthday_korean(args[1])
+            # if d == 0:  # 형식이 안맞거나 최소한 날짜를 잘못 입력한 것
+            #     await send_error_message(ctx, u"몇년몇월몇일 혹은 몇월몇일 혹은 몇일 이렇게 입력하세요.")
+            #     return
+            #
+            # try:
+            #     str_key_date = datetime.datetime.strptime("{y}-{m}-{d}", "%Y-%m-%d").date().strftime("%Y-%m-%d")
+            # except ValueError:
+            #     await send_error_message(ctx, u"날짜의 숫자가 잘못되었습니다.")
+            #     return
+            #
+            # # 키를 만들어서 그 날짜의 출석자 명단을 가져온다. 키는 "날짜 보스명"
+            # dic_key = f"{str_key_date} {boss_name}"
+            return
 
-            try:
-                str_key_date = datetime.datetime.strptime("{y}-{m}-{d}", "%Y-%m-%d").date().strftime("%Y-%m-%d")
-            except ValueError:
-                await send_error_message(ctx, u"날짜의 숫자가 잘못되었습니다.")
-                return
+        # 두번째 인자가 없으면..
+        str_now_date = datetime.datetime.now().date().strftime(cTIME_FORMAT_CHULCHECK_KEY)
+        guild_id = ctx.guild.id
 
-            # 키를 만들어서 그 날짜의 출석자 명단을 가져온다. 키는 "날짜 보스명"
-            dic_key = f"{str_key_date} {boss_name}"
+        # 먼저 오늘 날짜의 해당 보스명 출첵이 있으면 받아오고 없으면 만든다.
+        chulcheck_dict = self.db.get_chulcheck(guild_id, str_now_date, boss_name)
+        if chulcheck_dict is None:
+            chulcheck_dict = self.db.add_chulcheck(guild_id, str_now_date, boss_name, [])
 
-
-
-
-
-        # 일단 보스명과 오늘날짜 조합을 키로 해서 리스트를 만들어 넣는다.
-        now_date = datetime.datetime.now().date()
-        str_today = now_date.strftime(cTIME_FORMAT_CHULCHECK_KEY)
-
-
-
-
-        # self.logger.debug(guild_chulcheck_dic)
+        self.logger.debug(chulcheck_dict)
 
         class Buttons(discord.ui.View):
             def __init__(self, bot: BtBot, timeout=180):
@@ -100,14 +99,21 @@ class Lottery(commands.Cog):
 
             @discord.ui.button(label="출석", style=discord.ButtonStyle.blurple)
             async def chulcheck_on(self, interaction: discord.Interaction, button: discord.ui.Button, ):
-                pass
+                guild_member_name = interaction.user.name
+                chulcheck_dict[kFLD_CC_MEMBERS].append(guild_member_name)
+                on_members = set(chulcheck_dict[kFLD_CC_MEMBERS])
+                str_on_members = ", ".join(on_members)
+                await interaction.response.Ï(content=f"```{on_members}```")
 
             @discord.ui.button(label="빼줘", style=discord.ButtonStyle.red)
             async def chulcheck_off(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+
                 pass
 
         view = Buttons(self.bot)
-        await ctx.channel.send("```테스트```", view=view)
+        members = set(chulcheck_dict[kFLD_CC_MEMBERS])
+        str_members = ", ".join(members)
+        await ctx.channel.send(f"```{str_members}```", view=view)
 
 
 async def setup(bot: BtBot) -> None:

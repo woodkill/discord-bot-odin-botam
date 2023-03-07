@@ -1,7 +1,10 @@
+import logging
+import datetime
+
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-import logging
+
 from const_data import *
 
 
@@ -319,15 +322,33 @@ class BtDb:
         except Exception as e:
             self.logger.debug(e)
 
-    def get_guild_chulcheck(self, discord_guild_id: int, chulcheck_key: str) -> list:
-        """
+    def get_chulcheck(self, guild_id: int, str_botam_date: str, boss_name: str):
+        try:
+            docs = self.db.collection(kCOL_ODINBOTAMCHULCHECK)\
+                .where(kFLD_CC_DATE, u'==', str_botam_date)\
+                .where(kFLD_CC_BOSSNAME, u'==', boss_name).stream()
+        except Exception as e:
+            self.logger.error(e)
+            return None
 
-        :param discord_guild_id:
-        :param chulcheck_key:
-        :return:
-        """
-        str_discord_guild_id = str(discord_guild_id)
-        return []
+        if len(docs) != 1:
+            return None
+        self.logger.debug(docs[0].to_dict())
+        return docs[0].to_dict()
+
+    def add_chulcheck(self, guild_id: int, botam_date: datetime, boss_name: str, cc_members: list):
+        chulcheck_dic = {
+            kFLD_CC_GUILD: guild_id,
+            kFLD_CC_DATE: botam_date,
+            kFLD_CC_BOSSNAME: boss_name,
+            kFLD_CC_MEMBERS: cc_members
+        }
+        try:
+            update_time, cc_ref = self.db.collection(kCOL_ODINBOTAMCHULCHECK).add(chulcheck_dic)
+        except Exception as e:
+            self.logger.error(e)
+            return None
+        return chulcheck_dic
 
     #
     # def delete_boss_collection(self, discord_guild_id, col_ref, batch_size):
