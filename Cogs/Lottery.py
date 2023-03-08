@@ -62,17 +62,30 @@ class Lottery(commands.Cog):
             return
 
         # 보스 타입별로 쿨타임 설정
-
         if boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
-            cool_dt = datetime.timedelta(days=0, hours=48, minutes=0, seconds=0)
+            cool_dt = datetime.timedelta(days=0, hours=23, minutes=59, seconds=59)
         elif boss[kBOSS_TYPE] == cBOSS_TYPE_INTERVAL:
             d, h, m, s = get_separated_timedelta_ddhhmm(boss[kBOSS_INTERVAL])
             cool_dt = datetime.timedelta(days=d, hours=h, minutes=m, seconds=0)
         else:  # boss[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED:
-            cool_dt = datetime.timedelta(days=0, hours=24, minutes=0, seconds=0)
+            cool_dt = datetime.timedelta(days=0, hours=23, minutes=59, seconds=59)
 
         # 인자로 넘어온 보스명이 별명일 수도 있으므로 정식명을 사용한다.
         boss_name = boss[kBOSS_NAME]
+
+        # 공통으로 사용하는 값 준비
+        now = datetime.datetime.utcnow()  # 시간은 항상 UTC 시간으로 저장하고 표시할 때만 한국시간으로...
+        utc_now = now.astimezone(UTC)
+        self.logger.debug(now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
+        self.logger.debug(utc_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
+
+        guild_id = ctx.guild.id
+
+        # 이건 pytz 기능 테스트용
+        # utc_now = UTC.localize(now)
+        # kst_now = KST.localize(now)
+        # self.logger.debug(utc_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
+        # self.logger.debug(kst_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
 
         # 두번째 인자가 있으면
         if len(args) == 2:
@@ -94,32 +107,13 @@ class Lottery(commands.Cog):
             return
 
         # 두번째 인자가 없으면..
-        now = datetime.datetime.utcnow()  # 시간은 항상 UTC 시간으로 저장하고 표시할 때만 한국시간으로...
-        utc_now = now.astimezone(UTC)
-        self.logger.debug(now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
-        self.logger.debug(utc_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
+        # 출첵 정보를 찾는다. 없거나 주어진 쿨타임보다 오래된것이 마지막 것이면 새로 만든다.
+        chulcheck_id, chulcheck_dict = self.db.check_and_create_chulcheck(guild_id, boss_name, utc_now, cool_dt)
+        if chulcheck_id is None:
+            send_error_message(ctx, "무엇인가 잘못되었군요.")
+            return
 
-        # 이건 pytz 기능 테스트용
-        # utc_now = UTC.localize(now)
-        # kst_now = KST.localize(now)
-        # self.logger.debug(utc_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
-        # self.logger.debug(kst_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
-
-        guild_id = ctx.guild.id
-
-        # 먼저 가장 최근의 해당 보스명 출첵이 있으면 받아오고 없으면 만든다.
-        # 있더라도 해당 보스의 쿨타임보다 크면 새로 만든다.
-        doc_id = None
-        doc_id, chulcheck_dict = self.db.get_lastone_chulcheck(guild_id, boss_name)
-        if chulcheck_dict is None:
-            doc_id, chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
-            self.logger.debug(chulcheck_dict)
-        else:
-            td = utc_now - chulcheck_dict[kFLD_CC_DATETIME]
-            if td.total_seconds() > cool_dt.total_seconds():
-                doc_id, chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
-                self.logger.debug(chulcheck_dict)
-
+        # 생성한 출첵내의 생성시각은 UTC 이므로 출력용 KST 준비
         utc_chulcheck_time = chulcheck_dict[kFLD_CC_DATETIME]
         kst_chulcheck_time = utc_chulcheck_time.astimezone(KST)
         str_dp_chulcheck_time = kst_chulcheck_time.strftime(cTIME_FORMAT_KOREAN_MMDD)
@@ -134,24 +128,41 @@ class Lottery(commands.Cog):
 
             @discord.ui.button(label="출석", style=discord.ButtonStyle.blurple)
             async def chulcheck_on(self, interaction: discord.Interaction, button: discord.ui.Button, ):
-                guild_member_name = interaction.user.name
-                # firestore에 넣는 루틴
-                returned_doc_id, added_member_list = db.add_member_to_chulcheck(doc_id, guild_member_name)
-                if returned_doc_id is None:
-                    await send_error_message(ctx, u"출석자를 업데이트하지 못했습니다.")
-                    return
+                click_member_name = interaction.user.name  # 출석 버튼을 누른 자
+                member_list = chulcheck_dict[kFLD_CC_MEMBERS]
+                if click_member_name not in member_list:
+                    added_chulcheck_id, added_member_list = db.add_member_to_chulcheck(chulcheck_id, click_member_name) # FIRESTORE에 실시간 저장
+                    if added_chulcheck_id is None:
+                        await send_error_message(ctx, u"출석자를 업데이트하지 못했습니다.")
+                        return
+                    member_list = added_member_list
+                chulcheck_dict[kFLD_CC_MEMBERS] = member_list
                 message = f"```ansi\n"\
                   f"\033[34;1m"\
                   f"{boss_name}  {str_dp_chulcheck_time}\n"\
                   f"\033[0m\n"\
-                  f"{added_member_list}\n"\
+                  f"{', '.join(member_list)}\n"\
                   f"```"
                 await interaction.response.edit_message(content=message)
 
             @discord.ui.button(label="빼줘", style=discord.ButtonStyle.red)
             async def chulcheck_off(self, interaction: discord.Interaction, button: discord.ui.Button, ):
-
-                pass
+                click_member_name = interaction.user.name  # 빼줘 버튼을 누른 자
+                member_list = chulcheck_dict[kFLD_CC_MEMBERS]
+                if click_member_name in member_list:
+                    removed_chulcheck_id, removed_member_list = db.remove_member_from_chulcheck(chulcheck_id, click_member_name)  # FIRESTORE에 실시간 저장
+                if removed_chulcheck_id is None:
+                    await send_error_message(ctx, u"출석자를 업데이트하지 못했습니다.")
+                    return
+                member_list = removed_member_list
+                chulcheck_dict[kFLD_CC_MEMBERS] = member_list
+                message = f"```ansi\n" \
+                          f"\033[34;1m" \
+                          f"{boss_name}  {str_dp_chulcheck_time}\n" \
+                          f"\033[0m\n" \
+                          f"{', '.join(member_list)}\n" \
+                          f"```"
+                await interaction.response.edit_message(content=message)
 
         view = Buttons(self.bot)
         members = set(chulcheck_dict[kFLD_CC_MEMBERS])

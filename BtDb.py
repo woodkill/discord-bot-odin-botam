@@ -329,11 +329,36 @@ class BtDb:
         except Exception as e:
             self.logger.debug(e)
 
-    def get_lastone_chulcheck(self, guild_id: int, boss_name: str) -> (str, dict):
+    def check_and_create_chulcheck(self, guild_id: str, boss_name: str, utc_now: datetime.datetime, cool_dt: datetime.timedelta) -> (str, dict):
         """
-
+        인자로 넘어온 정보로 출첵 정보를 찾아서 리턴, 없거나 주어진 쿨타임보다 오래된것이 마지막 것이면 새로 만들어서 리턴
         :param guild_id:
         :param boss_name:
+        :param utc_now:
+        :param cool_dt:
+        :return:
+        """
+        chulcheck_id = None
+        chulcheck_dict = None
+        # 먼저 해당길드 해당보스의 가장 최근 출첵 정보를 가져와본다.
+        chulcheck_id, chulcheck_dict = self.get_lastone_chulcheck(guild_id, boss_name)
+        # 없으면 새로 만들고 그 정보를 리턴
+        if chulcheck_dict is None:
+            chulcheck_id, chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
+            self.logger.debug(chulcheck_dict)
+        # 있으면 그 출첵 정보 생성시각을 검사해서 인자로 넘어온 쿨타임 이상 지나간거면 새로 만들어서 리턴
+        else:
+            td = utc_now - chulcheck_dict[kFLD_CC_DATETIME]
+            if td.total_seconds() > cool_dt.total_seconds():
+                chulcheck_id, chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
+
+        return chulcheck_id, chulcheck_dict
+
+    def get_lastone_chulcheck(self, guild_id: int, boss_name: str) -> (str, dict):
+        """
+        길드ID(디스코드서버ID)와 보스명으로 가장 최근의 출첵 정보를 쿼리
+        :param guild_id: 길드ID(디스코드서버ID)
+        :param boss_name: 보스명
         :return:
         """
         try:
@@ -349,17 +374,17 @@ class BtDb:
         if len(query_snapshot) == 0:
             return None, None
 
-        self.logger.debug(query_snapshot[0].to_dict())
-
-        return query_snapshot[0].id, query_snapshot[0].to_dict()
+        doc_ref = query_snapshot[0]
+        self.logger.debug(doc_ref.to_dict())
+        return doc_ref.id, doc_ref.to_dict()
 
     def add_chulcheck(self, guild_id: int, botam_datetime: datetime.datetime, boss_name: str, cc_members: list) -> (str, dict):
         """
-
-        :param guild_id:
-        :param botam_datetime:
-        :param boss_name:
-        :param cc_members:
+        새로운 출첵 정보를 만들어 넣는다.
+        :param guild_id: 길드ID(디스코드서버ID)
+        :param botam_datetime: 출첵을 만드는 시간
+        :param boss_name: 출첵 보탐 보스명
+        :param cc_members: 참여자명단(참가 버튼 누른 사람)
         :return:
         """
         chulcheck_dic = {
@@ -376,10 +401,11 @@ class BtDb:
 
         return cc_ref.id, chulcheck_dic
 
-    def add_member_to_chulcheck(self, doc_id: str, member: str):
+    def add_member_to_chulcheck(self, doc_id: str, member: str) -> (str, list):
         """
-
-        :param doc_id:
+        생성되어 있는 출첵 정보의 참가자 명단에 참가자를 추가한다.
+        기능 특성상 여러명이 동시에 출석버튼을 누르기때문에 트랜젝션 보장 방식으로 추가
+        :param doc_id: 출첵정보 document_id
         :param member:
         :return:
         """
@@ -391,6 +417,7 @@ class BtDb:
             try:
                 snapshot = chulcheck_ref.get(transaction=tr)
                 members = snapshot.get(kFLD_CC_MEMBERS)
+                members = list(set(members))  # 중복제거
                 members.append(m)
                 tr.update(chulcheck_ref, {kFLD_CC_MEMBERS: members})
             except Exception as e:
@@ -402,7 +429,37 @@ class BtDb:
         if member_list is None:
             return None, None
 
-        return chulcheck_ref.id, member_list # TODO:이거 제대로 된 값으로..
+        return chulcheck_ref.id, member_list
+
+    def remove_member_from_chulcheck(self, doc_id: str, member: str) -> (str, list):
+        """
+        생성되어 있는 출첵 정보의 참가자 명단에 참가자를 제거한다.
+        기능 특성상 여러명이 동시에 버튼을 누르기 때문에 트랜젝션 보장 방식으로 추가
+        :param doc_id: 출첵정보 document_id
+        :param member:
+        :return:
+        """
+        transaction = self.db.transaction()
+        chulcheck_ref = self.db.collection(kCOL_ODINBOTAMCHULCHECK).document(doc_id)
+
+        @firestore.transactional
+        def update_in_transaction(tr, chulcheck_ref, m):
+            try:
+                snapshot = chulcheck_ref.get(transaction=tr)
+                members = snapshot.get(kFLD_CC_MEMBERS)
+                members = list(set(members))  # 중복제거
+                members.remove(m)
+                tr.update(chulcheck_ref, {kFLD_CC_MEMBERS: members})
+            except Exception as e:
+                self.logger.debug(e)
+                return None
+            return members
+
+        member_list = update_in_transaction(transaction, chulcheck_ref, member)
+        if member_list is None:
+            return None, None
+
+        return chulcheck_ref.id, member_list
 
     #
     # def delete_boss_collection(self, discord_guild_id, col_ref, batch_size):
