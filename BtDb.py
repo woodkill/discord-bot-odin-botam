@@ -5,7 +5,7 @@ from pytz import timezone, utc
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-from firebase_admin import firestore_async
+# from firebase_admin import firestore_async
 
 from const_data import *
 
@@ -21,7 +21,7 @@ class BtDb:
         self.app = firebase_admin.initialize_app(self.cred)
         self.db = firestore.client()
         # TODO: firestore async와 sync 차이점?
-        self.asyncdb = firestore_async.client()
+        # self.asyncdb = firestore_async.client()
         # logger setting
         self.logger = logging.getLogger('bot.db')
         # master data storage
@@ -329,7 +329,7 @@ class BtDb:
         except Exception as e:
             self.logger.debug(e)
 
-    def get_lastone_chulcheck(self, guild_id: int, boss_name: str):
+    def get_lastone_chulcheck(self, guild_id: int, boss_name: str) -> (str, dict):
         """
 
         :param guild_id:
@@ -337,22 +337,23 @@ class BtDb:
         :return:
         """
         try:
-            query_snapshot = self.db.collection(kCOL_ODINBOTAMCHULCHECK)\
-                .where(kFLD_CC_GUILD, u"==", guild_id)\
-                .where(kFLD_CC_BOSSNAME, u'==', boss_name)\
-                .order_by(kFLD_CC_DATETIME).limit_to_last(1).get()
+            query = self.db.collection(kCOL_ODINBOTAMCHULCHECK) \
+                .where(kFLD_CC_GUILD, u"==", guild_id) \
+                .where(kFLD_CC_BOSSNAME, u'==', boss_name) \
+                .order_by(kFLD_CC_DATETIME).limit_to_last(1)
+            query_snapshot = query.get()
         except Exception as e:
             self.logger.error(e)
-            return None
+            return None, None
 
         if len(query_snapshot) == 0:
-            return None
+            return None, None
 
         self.logger.debug(query_snapshot[0].to_dict())
 
-        return query_snapshot[0].to_dict()
+        return query_snapshot[0].id, query_snapshot[0].to_dict()
 
-    def add_chulcheck(self, guild_id: int, botam_datetime: datetime.datetime, boss_name: str, cc_members: list):
+    def add_chulcheck(self, guild_id: int, botam_datetime: datetime.datetime, boss_name: str, cc_members: list) -> (str, dict):
         """
 
         :param guild_id:
@@ -371,9 +372,37 @@ class BtDb:
             update_time, cc_ref = self.db.collection(kCOL_ODINBOTAMCHULCHECK).add(chulcheck_dic)
         except Exception as e:
             self.logger.error(e)
-            return None
+            return None, None
 
-        return chulcheck_dic
+        return cc_ref.id, chulcheck_dic
+
+    def add_member_to_chulcheck(self, doc_id: str, member: str):
+        """
+
+        :param doc_id:
+        :param member:
+        :return:
+        """
+        transaction = self.db.transaction()
+        chulcheck_ref = self.db.collection(kCOL_ODINBOTAMCHULCHECK).document(doc_id)
+
+        @firestore.transactional
+        def update_in_transaction(tr, chulcheck_ref, m):
+            try:
+                snapshot = chulcheck_ref.get(transaction=tr)
+                members = snapshot.get(kFLD_CC_MEMBERS)
+                members.append(m)
+                tr.update(chulcheck_ref, {kFLD_CC_MEMBERS: members})
+            except Exception as e:
+                self.logger.debug(e)
+                return None
+            return members
+
+        member_list = update_in_transaction(transaction, chulcheck_ref, member)
+        if member_list is None:
+            return None, None
+
+        return chulcheck_ref.id, member_list # TODO:이거 제대로 된 값으로..
 
     #
     # def delete_boss_collection(self, discord_guild_id, col_ref, batch_size):

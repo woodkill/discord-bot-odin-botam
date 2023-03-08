@@ -61,7 +61,7 @@ class Lottery(commands.Cog):
             await send_error_message(ctx, f"{arg_boss_name} : 존재하지 않는 보스명입니다.")
             return
 
-        # 보스 타입별로 쿨타임 설정 # TODO: 인터벌 타입은 사전에서 가져오고, 고정타입은 24시간으로.. 성채는 48시간으로...
+        # 보스 타입별로 쿨타임 설정
 
         if boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
             cool_dt = datetime.timedelta(days=0, hours=48, minutes=0, seconds=0)
@@ -109,20 +109,22 @@ class Lottery(commands.Cog):
 
         # 먼저 가장 최근의 해당 보스명 출첵이 있으면 받아오고 없으면 만든다.
         # 있더라도 해당 보스의 쿨타임보다 크면 새로 만든다.
-        chulcheck_dict = self.db.get_lastone_chulcheck(guild_id, boss_name)
-
-        if chulcheck_dict is None:  # 여기에 조건 추가
-            chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
+        doc_id = None
+        doc_id, chulcheck_dict = self.db.get_lastone_chulcheck(guild_id, boss_name)
+        if chulcheck_dict is None:
+            doc_id, chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
             self.logger.debug(chulcheck_dict)
         else:
             td = utc_now - chulcheck_dict[kFLD_CC_DATETIME]
             if td.total_seconds() > cool_dt.total_seconds():
-                chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
+                doc_id, chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
                 self.logger.debug(chulcheck_dict)
 
         utc_chulcheck_time = chulcheck_dict[kFLD_CC_DATETIME]
         kst_chulcheck_time = utc_chulcheck_time.astimezone(KST)
         str_dp_chulcheck_time = kst_chulcheck_time.strftime(cTIME_FORMAT_KOREAN_MMDD)
+
+        db = self.db
 
         class Buttons(discord.ui.View):
             def __init__(self, bot: BtBot, timeout=180):
@@ -133,15 +135,16 @@ class Lottery(commands.Cog):
             @discord.ui.button(label="출석", style=discord.ButtonStyle.blurple)
             async def chulcheck_on(self, interaction: discord.Interaction, button: discord.ui.Button, ):
                 guild_member_name = interaction.user.name
-                chulcheck_dict[kFLD_CC_MEMBERS].append(guild_member_name)
-                on_members = set(chulcheck_dict[kFLD_CC_MEMBERS])
-                str_on_members = ", ".join(on_members)
-                # TODO : firestore에 넣는 루틴
+                # firestore에 넣는 루틴
+                returned_doc_id, added_member_list = db.add_member_to_chulcheck(doc_id, guild_member_name)
+                if returned_doc_id is None:
+                    await send_error_message(ctx, u"출석자를 업데이트하지 못했습니다.")
+                    return
                 message = f"```ansi\n"\
                   f"\033[34;1m"\
                   f"{boss_name}  {str_dp_chulcheck_time}\n"\
                   f"\033[0m\n"\
-                  f"{str_on_members}\n"\
+                  f"{added_member_list}\n"\
                   f"```"
                 await interaction.response.edit_message(content=message)
 
