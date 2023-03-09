@@ -329,7 +329,7 @@ class BtDb:
         except Exception as e:
             self.logger.debug(e)
 
-    def check_and_create_chulcheck(self, guild_id: str, boss_name: str, utc_now: datetime.datetime, cool_dt: datetime.timedelta) -> (str, dict):
+    def check_and_create_chulcheck(self, guild_id: int, boss_name: str, utc_now: datetime.datetime, cool_dt: datetime.timedelta) -> (str, dict):
         """
         인자로 넘어온 정보로 출첵 정보를 찾아서 리턴, 없거나 주어진 쿨타임보다 오래된것이 마지막 것이면 새로 만들어서 리턴
         :param guild_id:
@@ -344,13 +344,13 @@ class BtDb:
         chulcheck_id, chulcheck_dict = self.get_lastone_chulcheck(guild_id, boss_name)
         # 없으면 새로 만들고 그 정보를 리턴
         if chulcheck_dict is None:
-            chulcheck_id, chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
+            chulcheck_id, chulcheck_dict = self.add_chulcheck(guild_id, utc_now, boss_name, [])
             self.logger.debug(chulcheck_dict)
         # 있으면 그 출첵 정보 생성시각을 검사해서 인자로 넘어온 쿨타임 이상 지나간거면 새로 만들어서 리턴
         else:
             td = utc_now - chulcheck_dict[kFLD_CC_DATETIME]
             if td.total_seconds() > cool_dt.total_seconds():
-                chulcheck_id, chulcheck_dict = self.db.add_chulcheck(guild_id, utc_now, boss_name, [])
+                chulcheck_id, chulcheck_dict = self.add_chulcheck(guild_id, utc_now, boss_name, [])
 
         return chulcheck_id, chulcheck_dict
 
