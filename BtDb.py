@@ -419,6 +419,7 @@ class BtDb:
                 members = snapshot.get(kFLD_CC_MEMBERS)
                 members = list(set(members))  # 중복제거
                 members.append(m)
+                members = sorted(members)
                 tr.update(chulcheck_ref, {kFLD_CC_MEMBERS: members})
             except Exception as e:
                 self.logger.debug(e)
@@ -447,7 +448,6 @@ class BtDb:
             try:
                 snapshot = chulcheck_ref.get(transaction=tr)
                 members = snapshot.get(kFLD_CC_MEMBERS)
-                members = list(set(members))  # 중복제거
                 members.remove(m)
                 tr.update(chulcheck_ref, {kFLD_CC_MEMBERS: members})
             except Exception as e:

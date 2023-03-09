@@ -13,8 +13,9 @@ from const_data import *
 KST = timezone('Asia/Seoul')
 UTC = utc
 
-cEMOJI_CHULCHECK_ON = '⭕'
-cEMOJI_CHULCHECK_OFF = '❌'
+# cEMOJI_CHULCHECK_ON = '⭕'
+# cEMOJI_CHULCHECK_OFF = '❌'
+
 
 class Lottery(commands.Cog):
 
@@ -105,103 +106,85 @@ class Lottery(commands.Cog):
         kst_chulcheck_time = utc_chulcheck_time.astimezone(KST)
         str_dp_chulcheck_time = kst_chulcheck_time.strftime(cTIME_FORMAT_KOREAN_MMDD)
 
-        # db = self.db
-        #
-        # class Buttons(discord.ui.View):
-        #     def __init__(self, bot: BtBot, timeout=180):
-        #         self.bot = bot
-        #         self.logger = logging.getLogger('bot.lottery')
-        #         super().__init__(timeout=timeout)
-        #
-        #     @discord.ui.button(label="출석", style=discord.ButtonStyle.blurple)
-        #     async def chulcheck_on(self, interaction: discord.Interaction, button: discord.ui.Button, ):
-        #         click_member_name = interaction.user.name  # 출석 버튼을 누른 자
-        #         member_list = chulcheck_dict[kFLD_CC_MEMBERS]
-        #         if click_member_name not in member_list:
-        #             added_chulcheck_id, added_member_list = db.add_member_to_chulcheck(chulcheck_id, click_member_name) # FIRESTORE에 실시간 저장
-        #             if added_chulcheck_id is None:
-        #                 await send_error_message(ctx, u"출석자를 업데이트하지 못했습니다.")
-        #                 return
-        #             member_list = added_member_list
-        #         chulcheck_dict[kFLD_CC_MEMBERS] = member_list
-        #         message = f"```ansi\n"\
-        #           f"\033[34;1m"\
-        #           f"{boss_name}  {str_dp_chulcheck_time}\n"\
-        #           f"\033[0m\n"\
-        #           f"{', '.join(member_list)}\n"\
-        #           f"```"
-        #         await interaction.response.edit_message(content=message)
-        #
-        #     @discord.ui.button(label="빼줘", style=discord.ButtonStyle.red)
-        #     async def chulcheck_off(self, interaction: discord.Interaction, button: discord.ui.Button, ):
-        #         click_member_name = interaction.user.name  # 빼줘 버튼을 누른 자
-        #         member_list = chulcheck_dict[kFLD_CC_MEMBERS]
-        #         if click_member_name in member_list:
-        #             removed_chulcheck_id, removed_member_list = db.remove_member_from_chulcheck(chulcheck_id, click_member_name)  # FIRESTORE에 실시간 저장
-        #         if removed_chulcheck_id is None:
-        #             await send_error_message(ctx, u"출석자를 업데이트하지 못했습니다.")
-        #             return
-        #         member_list = removed_member_list
-        #         chulcheck_dict[kFLD_CC_MEMBERS] = member_list
-        #         message = f"```ansi\n" \
-        #                   f"\033[34;1m" \
-        #                   f"{boss_name}  {str_dp_chulcheck_time}\n" \
-        #                   f"\033[0m\n" \
-        #                   f"{', '.join(member_list)}\n" \
-        #                   f"```"
-        #         await interaction.response.edit_message(content=message)
+        db = self.db
 
-        members = set(chulcheck_dict[kFLD_CC_MEMBERS])
+        class Buttons(discord.ui.View):
+            def __init__(self, bot: BtBot, timeout=180):
+                self.bot = bot
+                self.logger = logging.getLogger('bot.lottery')
+                super().__init__(timeout=timeout)
+
+            @discord.ui.button(label="출석", style=discord.ButtonStyle.blurple)
+            async def chulcheck_on(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+                click_member_name = interaction.user.name  # 출석 버튼을 누른 자
+                member_list = chulcheck_dict[kFLD_CC_MEMBERS]
+                if click_member_name not in member_list:
+                    added_chulcheck_id, added_member_list = db.add_member_to_chulcheck(chulcheck_id, click_member_name) # FIRESTORE에 실시간 저장
+                    if added_chulcheck_id is None:
+                        await send_error_message(ctx, u"출석자를 업데이트하지 못했습니다.")
+                        return
+                    member_list = added_member_list
+                chulcheck_dict[kFLD_CC_MEMBERS] = member_list
+                msg_add = to_chulcheck_code_block(f"{boss_name} {str_dp_chulcheck_time} - {chulcheck_id}", f"{', '.join(member_list)}")
+                await interaction.response.edit_message(content=msg_add)
+
+            @discord.ui.button(label="빼줘", style=discord.ButtonStyle.red)
+            async def chulcheck_off(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+                click_member_name = interaction.user.name  # 빼줘 버튼을 누른 자
+                member_list = chulcheck_dict[kFLD_CC_MEMBERS]
+                if click_member_name in member_list:
+                    removed_chulcheck_id, removed_member_list = db.remove_member_from_chulcheck(chulcheck_id, click_member_name)  # FIRESTORE에 실시간 저장
+                if removed_chulcheck_id is None:
+                    await send_error_message(ctx, u"출석자를 업데이트하지 못했습니다.")
+                    return
+                member_list = removed_member_list
+                chulcheck_dict[kFLD_CC_MEMBERS] = member_list
+                msg_remove = to_chulcheck_code_block(f"{boss_name} {str_dp_chulcheck_time} - {chulcheck_id}", f"{', '.join(member_list)}")
+                await interaction.response.edit_message(content=msg_remove)
+
+        members = sorted(chulcheck_dict[kFLD_CC_MEMBERS])
         str_members = ", ".join(members)
 
-        msg = to_chulcheck_code_block(
-            f"{cMSG_HEAD_CHULCHECK} : {boss_name} {str_dp_chulcheck_time} - {chulcheck_id}\n",
-            str_members)
+        msg = to_chulcheck_code_block(f"{boss_name} {str_dp_chulcheck_time} - {chulcheck_id}", str_members)
 
-        # view = Buttons(self.bot)
-        # await ctx.channel.send(message, view=view)
+        view = Buttons(self.bot)
+        await ctx.channel.send(msg, view=view)
 
-        msg_bot = await ctx.channel.send(msg)
-        await msg_bot.add_reaction(cEMOJI_CHULCHECK_ON)
-        await msg_bot.add_reaction(cEMOJI_CHULCHECK_OFF)
+        # msg_bot = await ctx.channel.send(msg)
+        # await msg_bot.add_reaction(cEMOJI_CHULCHECK_ON)
+        # await msg_bot.add_reaction(cEMOJI_CHULCHECK_OFF)
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    # @commands.Cog.listener()
+    # async def on_raw_reaction_add(self, payload):
+    #
+    #     channel = self.bot.get_channel(payload.channel_id)
+    #     message = await channel.fetch_message(payload.message_id)
+    #
+    #     msg = discord.utils.remove_markdown(message.content)
+    #     msg = msg.removeprefix(cPREFIX_ANSI).removeprefix(cPREFIX_CODEBLOCK_OK).removesuffix(cPOSTFIX_CODEBLOCK).strip()
+    #
+    #     if not (msg.startswith(cMSG_HEAD_CHULCHECK) or msg.startswith(cMSG_HEAD_LOTTERY)):
+    #         return
+    #
+    #     lines = msg.split()
+    #     check_type = lines[0]  # 출석체크,
+    #
+    #     if check_type == cMSG_HEAD_CHULCHECK:
+    #         boss_name = lines[2]
+    #         str_botam_day = lines[3]
+    #         chulcheck_id = lines[5]
+    #         guild_id = payload.guild_id
+    #         event_type = payload.event_type
+    #         user_info = await self.bot.fetch_user(payload.user_id)
+    #
+    #         for reaction in message.reactions:
+    #             async for user in reaction.users():
+    #                 pass
 
-        channel = self.bot.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-
-        msg = discord.utils.remove_markdown(message.content)
-        msg = msg.removeprefix(cPREFIX_ANSI).removeprefix(cPREFIX_CODEBLOCK_OK).removesuffix(cPOSTFIX_CODEBLOCK).strip()
-
-        if not (msg.startswith(cMSG_HEAD_CHULCHECK) or msg.startswith(cMSG_HEAD_LOTTERY)):
-            return
-
-        lines = msg.split()
-
-        if lines[0] == cMSG_HEAD_CHULCHECK:
-            pass
-            return
-
-        if lines[0] == cMSG_HEAD_LOTTERY:
-            pass
-            return
-
-        guild_id = payload.guild_id
-        # emoji = payload.emoji.name
-        event_type = payload.event_type
-        user_info = await self.bot.fetch_user(payload.user_id)
-        self.logger.debug(message.reactions)
-        for reaction in message.reactions:
-            self.logger.debug(reaction)
-            async for user in reaction.users():
-                self.logger.debug(user)
-        pass
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
-        self.logger.debug(payload)
-        pass
+    # @commands.Cog.listener()
+    # async def on_raw_reaction_remove(self, payload):
+    #     self.logger.debug(payload)
+    #     pass
 
 
 async def setup(bot: BtBot) -> None:
