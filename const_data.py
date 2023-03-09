@@ -66,6 +66,8 @@ cUsageDic = {
 cMSG_REGISTER_GUILD_FIRST = u"먼저 길드등록을 하여야 합니다."
 cMSG_NO_GUILD_INFO = u"길드정보가 없습니다."
 cMSG_NO_EXISTING_CMD = "그런 명령어는 없습니다."
+cMSG_HEAD_CHULCHECK = "출석체크"
+cMSG_HEAD_LOTTERY = "뽑기"
 
 cLIST_DEFAULT_TIMERS = [15, 5, 1]
 

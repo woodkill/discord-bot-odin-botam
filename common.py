@@ -2,8 +2,13 @@ import logging
 import discord
 from discord.ext import commands
 import re
-from common import *
 from const_data import *
+
+cPREFIX_ANSI = "ansi\n"
+cPREFIX_CODEBLOCK_OK = "\x1b[34;1m"
+cPREFIX_CODEBLOCK_ERROR = "\x1b[31;1m"
+cPREFIX_CODEBLOCK_USAGE = "\x1b[32;1m"
+cPOSTFIX_CODEBLOCK = "\x1b[0m"
 
 
 def to_ok_code_block(msg: str) -> str:
@@ -12,10 +17,10 @@ def to_ok_code_block(msg: str) -> str:
     :param msg: 본문 문자열
     :return: 변환된 문자열
     """
-    return f"```ansi\n" \
-           f"\033[34;1m" \
+    return f"```{cPREFIX_ANSI}" \
+           f"{cPREFIX_CODEBLOCK_OK}" \
            f"{msg}\n" \
-           f"\033[0m\n" \
+           f"{cPOSTFIX_CODEBLOCK}" \
            f"```"
 
 
@@ -25,10 +30,10 @@ def to_error_code_block(msg: str) -> str:
     :param msg: 본문 문자열
     :return: 변환된 문자열
     """
-    return f"```ansi\n" \
-           f"\033[31;1m" \
+    return f"```{cPREFIX_ANSI}" \
+           f"{cPREFIX_CODEBLOCK_ERROR}" \
            f"{msg}\n" \
-           f"\033[0m\n" \
+           f"{cPOSTFIX_CODEBLOCK}" \
            f"```"
 
 
@@ -38,10 +43,25 @@ def to_guide_code_block(msg: str) -> str:
     :param msg: 본문 문자열
     :return: 변환된 문자열
     """
-    return f"```ansi\n" \
-           f"\033[32;1m" \
+    return f"```{cPREFIX_ANSI}" \
+           f"{cPREFIX_CODEBLOCK_USAGE}" \
            f"{msg}\n" \
-           f"\033[0m\n" \
+           f"{cPOSTFIX_CODEBLOCK}" \
+           f"```"
+
+
+def to_chulcheck_code_block(msg: str, members: str):
+    """
+
+    :param msg:
+    :param members:
+    :return:
+    """
+    return f"```{cPREFIX_ANSI}" \
+           f"{cPREFIX_CODEBLOCK_OK}" \
+           f"{msg}\n" \
+           f"{cPOSTFIX_CODEBLOCK}" \
+           f"{members}" \
            f"```"
 
 
@@ -52,8 +72,8 @@ async def send_common_message(ctx: commands.Context, msg:str):
     :param msg:
     :return:
     """
-    lapping_msg = f"```\n" \
-                  f"{msg}\n" \
+    lapping_msg = f"```" \
+                  f"{msg}" \
                   f"```"
     await ctx.send(lapping_msg)
 
@@ -65,10 +85,10 @@ async def send_ok_message(ctx: commands.Context, msg: str):
     :param msg: 원본 문자열
     :return: 없음
     """
-    lapping_msg = f"```ansi\n" \
-                  f"\033[34;1m" \
+    lapping_msg = f"```{cPREFIX_ANSI}" \
+                  f"{cPREFIX_CODEBLOCK_OK}" \
                   f"{msg}\n" \
-                  f"\033[0m\n" \
+                  f"{cPOSTFIX_CODEBLOCK}" \
                   f"```"
     await ctx.send(lapping_msg)
 
@@ -80,10 +100,10 @@ async def send_error_message(ctx: commands.Context, msg: str):
     :param msg: 원본 문자열
     :return: 없음
     """
-    lapping_msg = f"```ansi\n" \
-                  f"\033[31;1m" \
+    lapping_msg = f"```{cPREFIX_ANSI}" \
+                  f"{cPREFIX_CODEBLOCK_ERROR}" \
                   f"{msg}\n" \
-                  f"\033[0m\n" \
+                  f"{cPOSTFIX_CODEBLOCK}" \
                   f"```"
     await ctx.send(lapping_msg)
 
@@ -95,10 +115,10 @@ async def send_guide_message(ctx: commands.Context, msg: str):
     :param msg: 원본 문자열
     :return: 없음
     """
-    lapping_msg = f"```ansi\n" \
-                  f"\033[32;1m" \
+    lapping_msg = f"```{cPREFIX_ANSI}" \
+                  f"{cPREFIX_CODEBLOCK_USAGE}" \
                   f"{msg}\n" \
-                  f"\033[0m\n" \
+                  f"{cPOSTFIX_CODEBLOCK}" \
                   f"```"
     await ctx.send(lapping_msg)
 
@@ -110,10 +130,10 @@ async def response_error_message(response: discord.Interaction.response, msg:str
     :param msg: 원본 문자열
     :return: 없음
     """
-    lapping_msg = f"```ansi\n" \
-                  f"\033[31;1m" \
+    lapping_msg = f"```{cPREFIX_ANSI}" \
+                  f"{cPREFIX_CODEBLOCK_ERROR}" \
                   f"{msg}\n" \
-                  f"\033[0m\n" \
+                  f"{cPOSTFIX_CODEBLOCK}" \
                   f"```"
     await response.send_message(lapping_msg)
 

@@ -154,19 +154,14 @@ class Lottery(commands.Cog):
         members = set(chulcheck_dict[kFLD_CC_MEMBERS])
         str_members = ", ".join(members)
 
-        message = f"```ansi\n"\
-                  f"\033[34;1m"\
-                  f""\
-                  f"출석체크 : {boss_name} {str_dp_chulcheck_time}\n"\
-                  f"ID:{chulcheck_id}\n"\
-                  f"\033[0m\n"\
-                  f"{str_members}\n"\
-                  f"```"
+        msg = to_chulcheck_code_block(
+            f"{cMSG_HEAD_CHULCHECK} : {boss_name} {str_dp_chulcheck_time} - {chulcheck_id}\n",
+            str_members)
 
         # view = Buttons(self.bot)
         # await ctx.channel.send(message, view=view)
 
-        msg_bot = await ctx.channel.send(message)
+        msg_bot = await ctx.channel.send(msg)
         await msg_bot.add_reaction(cEMOJI_CHULCHECK_ON)
         await msg_bot.add_reaction(cEMOJI_CHULCHECK_OFF)
 
@@ -176,7 +171,21 @@ class Lottery(commands.Cog):
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
 
-        message.content
+        msg = discord.utils.remove_markdown(message.content)
+        msg = msg.removeprefix(cPREFIX_ANSI).removeprefix(cPREFIX_CODEBLOCK_OK).removesuffix(cPOSTFIX_CODEBLOCK).strip()
+
+        if not (msg.startswith(cMSG_HEAD_CHULCHECK) or msg.startswith(cMSG_HEAD_LOTTERY)):
+            return
+
+        lines = msg.split()
+
+        if lines[0] == cMSG_HEAD_CHULCHECK:
+            pass
+            return
+
+        if lines[0] == cMSG_HEAD_LOTTERY:
+            pass
+            return
 
         guild_id = payload.guild_id
         # emoji = payload.emoji.name
