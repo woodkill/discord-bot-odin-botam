@@ -40,8 +40,8 @@ cCMD_ALARM_WEEKDAY_FIXED_ONOFF = u"성채"
 cCMD_ALARM_REGISTER = u"필보"
 cCMD_ALARM_TIMETABLE = u"시간표"
 cCMD_ALARM_TODAY = u"오늘"
-cCMD_LOTTERY_CULCHECK = u"출첵"
-cCMD_LOTTERY_CC_HISTORY = u"출첵이력"
+cCMD_LOTTERY_CHULCHECK = u"출첵"
+cCMD_LOTTERY_CHULCHECK_HISTORY = u"출첵이력"
 
 cCMD_PARAM_OFF = u"끄기"
 
@@ -58,7 +58,8 @@ cUsageDic = {
     cCMD_ALARM_REGISTER:            {kCMD_USAGE: f"{cCMD_ALARM_REGISTER}  ***보스명  [ 남은시간  |  끄기 ]***", kCMD_EXPLANATION: f"{cCMD_ALARM_REGISTER} 알람 추가/삭제"},
     cCMD_ALARM_TIMETABLE:           {kCMD_USAGE: f"{cCMD_ALARM_TIMETABLE}", kCMD_EXPLANATION: f"보스 시간표 이미지 첨부로 알람시간 자동인식"},
     cCMD_ALARM_TODAY:               {kCMD_USAGE: f"{cCMD_ALARM_TODAY}  ***알람명  [ 시각:분  |  끄기 ]***", kCMD_EXPLANATION: f"원하는 이름의 알람을 설정(금일스케쥴용)"},
-    cCMD_LOTTERY_CULCHECK:          {kCMD_USAGE: f"{cCMD_LOTTERY_CULCHECK}  ***보스명***", kCMD_EXPLANATION: f"보탐 참여자 출석체크. 지각생도 추가 가능"},
+    cCMD_LOTTERY_CHULCHECK:         {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK}  ***보스명***", kCMD_EXPLANATION: f"보탐 참여자 출석체크. 지각생도 추가 가능"},
+    cCMD_LOTTERY_CHULCHECK_HISTORY: {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK_HISTORY}  ***보스명  N***", kCMD_EXPLANATION: f"해당 보스의 과거 N개 출첵들을 보여줌.(지정 안하면 5)"},
 }
 
 '''

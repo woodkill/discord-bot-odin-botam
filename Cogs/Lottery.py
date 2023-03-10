@@ -28,8 +28,8 @@ class Lottery(commands.Cog):
     async def on_ready(self) -> None:
         self.logger.info(f"Lottery Cog loaded.")
 
-    @commands.command(name=cCMD_LOTTERY_CULCHECK)
-    async def alram_timers(self, ctx: commands.Context, *args) -> None:
+    @commands.command(name=cCMD_LOTTERY_CHULCHECK)
+    async def boss_chulcheck(self, ctx: commands.Context, *args) -> None:
         """
         보탐 출첵 기능
         :param ctx:
@@ -40,7 +40,7 @@ class Lottery(commands.Cog):
             두번째 인자가 있는 경우 : 그 날짜의 출첵을 출력한다. 이 경우, 출첵은 할 수 없다.
         :return:
         """
-        self.logger.info(f"{cCMD_LOTTERY_CULCHECK} {args} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_LOTTERY_CHULCHECK} {args} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -53,10 +53,18 @@ class Lottery(commands.Cog):
             return
 
         # 명령어 형식이 맞는지 검사
-        if len(args) > 2:  # 인자가 1개 혹은 2개이어야 함
-            await send_usage_embed(ctx, cCMD_LOTTERY_CULCHECK)
+        if len(args) != 1:  # 인자가 1개이어야 함
+            await send_usage_embed(ctx, cCMD_LOTTERY_CHULCHECK)
             return
 
+        # TODO : 이거 하다가 말았음.
+        # 운영진인지 검사
+        role = discord.utils.get(ctx.guild.roles, name="운영진")  # Get the role
+        if role not in ctx.author.roles:  # Check if the author has the role
+            await send_error_message(ctx, "운영진만?")
+            return
+
+        # TODO: 이부분은 보스명이면 쿨타임을 가져오고, 보스명이 아니면 쿨타임을 12시간으로...
         # 첫번째 인자가 보스명인지, 보스명이라면 고정타입 보스가 아닌지 검사
         arg_boss_name = args[0]
         boss_key, boss = self.db.get_boss_item_by_name(args[0])
@@ -89,10 +97,6 @@ class Lottery(commands.Cog):
         # kst_now = KST.localize(now)
         # self.logger.debug(utc_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
         # self.logger.debug(kst_now.strftime(cTIME_FORMAT_WITH_TIMEZONE))
-
-        # 두번째 인자가 있으면
-        if len(args) == 2:
-            return
 
         # 두번째 인자가 없으면..
         # 출첵 정보를 찾는다. 없거나 주어진 쿨타임보다 오래된것이 마지막 것이면 새로 만든다.
@@ -153,6 +157,69 @@ class Lottery(commands.Cog):
         # msg_bot = await ctx.channel.send(msg)
         # await msg_bot.add_reaction(cEMOJI_CHULCHECK_ON)
         # await msg_bot.add_reaction(cEMOJI_CHULCHECK_OFF)
+
+    @commands.command(name=cCMD_LOTTERY_CHULCHECK_HISTORY)
+    async def boss_chulcheck_history(self, ctx: commands.Context, *args) -> None:
+        """
+
+        :param ctx:
+        :param args:
+        :return:
+        """
+        self.logger.info(f"{cCMD_LOTTERY_CHULCHECK_HISTORY} {args} by {ctx.message.author}")
+
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await send_guide_message(ctx, cMSG_REGISTER_GUILD_FIRST)
+            return
+
+        # 비정상 상태 체크
+        if ctx.guild.id not in self.bot.odin_guilds_dic:
+            await send_error_message(ctx, cMSG_NO_GUILD_INFO)
+            return
+
+        # 명령어 형식이 맞는지 검사
+        if len(args) != 1 and len(args) != 2:  # 인자가 1개 혹은 2개이어야 함
+            await send_usage_embed(ctx, cCMD_LOTTERY_CHULCHECK_HISTORY)
+            return
+
+        # 첫번째 인자가 보스명인지, 보스명이라면 고정타입 보스가 아닌지 검사
+        arg_boss_name = args[0]
+        boss_key, boss = self.db.get_boss_item_by_name(args[0])
+        if boss_key is None:
+            await send_error_message(ctx, f"{arg_boss_name} : 존재하지 않는 보스명입니다.")
+            return
+
+        # 역순으로 몇 개까지의 출첵을 보여줄 지 숫자 저장
+        if len(args) == 1:
+            history_count = 5
+        else:
+            try:
+                history_count = int(args[1])
+            except ValueError as e:
+                history_count = 5
+
+        # 인자로 넘어온 보스명이 별명일 수도 있으므로 정식명을 사용한다.
+        boss_name = boss[kBOSS_NAME]
+
+        chulcheck_list = self.db.get_last_chulchecks(ctx.guild.id, boss_name, history_count)
+
+        if len(chulcheck_list) == 0:
+            await send_error_message(ctx, f"[{boss_name}] 보탐 출첵 이력이 없습니다.")
+            return
+
+        for chulcheck in chulcheck_list:
+            chulcheck_id = chulcheck[0]
+            chulcheck_dict = chulcheck[1]
+            # 생성한 출첵내의 생성시각은 UTC 이므로 출력용 KST 준비
+            utc_chulcheck_time = chulcheck_dict[kFLD_CC_DATETIME]
+            kst_chulcheck_time = utc_chulcheck_time.astimezone(KST)
+            str_dp_chulcheck_time = kst_chulcheck_time.strftime(cTIME_FORMAT_KOREAN_MMDD)
+            member_list = chulcheck_dict[kFLD_CC_MEMBERS]
+            msg = to_chulcheck_code_block(f"{boss_name} {str_dp_chulcheck_time} - {chulcheck_id}", f"{', '.join(member_list)}")
+            await ctx.channel.send(msg)
+
+
 
     # @commands.Cog.listener()
     # async def on_raw_reaction_add(self, payload):

@@ -378,6 +378,32 @@ class BtDb:
         self.logger.debug(doc_ref.to_dict())
         return doc_ref.id, doc_ref.to_dict()
 
+    def get_last_chulchecks(self, guild_id: int, boss_name: str, count: int) -> list:
+        """
+        길드ID(디스코드서버ID)와 보스명으로 가장 최근 N개의 출첵 정보를 쿼리
+        :param guild_id: 길드ID(디스코드서버ID)
+        :param boss_name: 보스명
+        :param count: 과거 몇개?
+        :return:
+        """
+        try:
+            query = self.db.collection(kCOL_ODINBOTAMCHULCHECK) \
+                .where(kFLD_CC_GUILD, u"==", guild_id) \
+                .where(kFLD_CC_BOSSNAME, u'==', boss_name) \
+                .order_by(kFLD_CC_DATETIME, direction=firestore.Query.DESCENDING).limit(count)
+            query_snapshot = query.get()
+        except Exception as e:
+            self.logger.error(e)
+            return None, None
+
+        chulcheck_list = []
+        for doc_ref in query_snapshot:
+            self.logger.debug(doc_ref.to_dict())
+            item = [doc_ref.id, doc_ref.to_dict()]
+            chulcheck_list.append(item)
+
+        return chulcheck_list
+
     def add_chulcheck(self, guild_id: int, botam_datetime: datetime.datetime, boss_name: str, cc_members: list) -> (str, dict):
         """
         새로운 출첵 정보를 만들어 넣는다.
