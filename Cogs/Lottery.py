@@ -64,25 +64,24 @@ class Lottery(commands.Cog):
             await send_error_message(ctx, "운영진만?")
             return
 
-        # TODO: 이부분은 보스명이면 쿨타임을 가져오고, 보스명이 아니면 쿨타임을 12시간으로...
         # 첫번째 인자가 보스명인지, 보스명이라면 고정타입 보스가 아닌지 검사
+        # 보스명이면 쿨타임을 가져오고, 보스명이 아니면 쿨타임을 12시간으로...
         arg_boss_name = args[0]
-        boss_key, boss = self.db.get_boss_item_by_name(args[0])
-        if boss_key is None:
-            await send_error_message(ctx, f"{arg_boss_name} : 존재하지 않는 보스명입니다.")
-            return
-
-        # 보스 타입별로 쿨타임 설정
-        if boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
-            cool_dt = datetime.timedelta(days=0, hours=23, minutes=59, seconds=59)
-        elif boss[kBOSS_TYPE] == cBOSS_TYPE_INTERVAL:
-            d, h, m, s = get_separated_timedelta_ddhhmm(boss[kBOSS_INTERVAL])
-            cool_dt = datetime.timedelta(days=d, hours=h, minutes=m, seconds=0)
-        else:  # boss[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED:
-            cool_dt = datetime.timedelta(days=0, hours=23, minutes=59, seconds=59)
-
-        # 인자로 넘어온 보스명이 별명일 수도 있으므로 정식명을 사용한다.
-        boss_name = boss[kBOSS_NAME]
+        boss_key, boss = self.db.get_boss_item_by_name(arg_boss_name)
+        if boss_key:
+            # 인자로 넘어온 보스명이 별명일 수도 있으므로 정식명을 사용한다.
+            boss_name = boss[kBOSS_NAME]
+            # 보스 타입별로 쿨타임 설정
+            if boss[kBOSS_TYPE] == cBOSS_TYPE_WEEKDAY_FIXED:
+                cool_dt = datetime.timedelta(days=0, hours=23, minutes=59, seconds=59)
+            elif boss[kBOSS_TYPE] == cBOSS_TYPE_INTERVAL:
+                d, h, m, s = get_separated_timedelta_ddhhmm(boss[kBOSS_INTERVAL])
+                cool_dt = datetime.timedelta(days=d, hours=h, minutes=m, seconds=0)
+            else:  # boss[kBOSS_TYPE] == cBOSS_TYPE_DAILY_FIXED:
+                cool_dt = datetime.timedelta(days=0, hours=23, minutes=59, seconds=59)
+        else:
+            boss_name = arg_boss_name
+            cool_dt = datetime.timedelta(days=0, hours=11, minutes=59, seconds=59)
 
         # 공통으로 사용하는 값 준비
         now = datetime.datetime.utcnow()  # 시간은 항상 UTC 시간으로 저장하고 표시할 때만 한국시간으로...
@@ -183,12 +182,16 @@ class Lottery(commands.Cog):
             await send_usage_embed(ctx, cCMD_LOTTERY_CHULCHECK_HISTORY)
             return
 
+        # TODO: 보스명이 아닌 출첵명 테스트 해야 함.
+
         # 첫번째 인자가 보스명인지, 보스명이라면 고정타입 보스가 아닌지 검사
         arg_boss_name = args[0]
-        boss_key, boss = self.db.get_boss_item_by_name(args[0])
-        if boss_key is None:
-            await send_error_message(ctx, f"{arg_boss_name} : 존재하지 않는 보스명입니다.")
-            return
+        boss_key, boss = self.db.get_boss_item_by_name(arg_boss_name)
+        if boss_key:
+            # 인자로 넘어온 보스명이 별명이어도 정식 보스명으로 DB에 저장하므로 여기서도 전환해줘야 함.
+            boss_name = boss[kBOSS_NAME]
+        else:
+            boss_name = arg_boss_name
 
         # 역순으로 몇 개까지의 출첵을 보여줄 지 숫자 저장
         if len(args) == 1:
@@ -198,9 +201,6 @@ class Lottery(commands.Cog):
                 history_count = int(args[1])
             except ValueError as e:
                 history_count = 5
-
-        # 인자로 넘어온 보스명이 별명일 수도 있으므로 정식명을 사용한다.
-        boss_name = boss[kBOSS_NAME]
 
         chulcheck_list = self.db.get_last_chulchecks(ctx.guild.id, boss_name, history_count)
 
