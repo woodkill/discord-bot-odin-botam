@@ -354,6 +354,14 @@ class BtDb:
 
         return chulcheck_id, chulcheck_dict
 
+    def delete_chulcheck(self, chulcheck_id: str) -> bool:
+        try:
+            self.db.collection(kCOL_ODINBOTAMCHULCHECK).document(chulcheck_id).delete()
+        except Exception as e:
+            self.logger.error(e)
+            return False
+        return True
+
     def get_lastone_chulcheck(self, guild_id: int, boss_name: str) -> (str, dict):
         """
         길드ID(디스코드서버ID)와 보스명으로 가장 최근의 출첵 정보를 쿼리
@@ -378,6 +386,30 @@ class BtDb:
         self.logger.debug(doc_ref.to_dict())
         return doc_ref.id, doc_ref.to_dict()
 
+    def get_all_last_chulchecks(self, guild_id: int, count: int) -> list:
+        """
+        길드ID(디스코드서버ID)의 가장 최근 N개의 출첵 정보를 쿼리
+        :param guild_id:
+        :param count:
+        :return:
+        """
+        try:
+            query = self.db.collection(kCOL_ODINBOTAMCHULCHECK) \
+                .where(kFLD_CC_GUILD, u"==", guild_id) \
+                .order_by(kFLD_CC_DATETIME, direction=firestore.Query.DESCENDING).limit(count)
+            query_snapshot = query.get()
+        except Exception as e:
+            self.logger.error(e)
+            return None
+
+        chulcheck_list = []
+        for doc_ref in query_snapshot:
+            self.logger.debug(doc_ref.to_dict())
+            item = [doc_ref.id, doc_ref.to_dict()]
+            chulcheck_list.append(item)
+
+        return chulcheck_list
+
     def get_last_chulchecks(self, guild_id: int, boss_name: str, count: int) -> list:
         """
         길드ID(디스코드서버ID)와 보스명으로 가장 최근 N개의 출첵 정보를 쿼리
@@ -394,7 +426,7 @@ class BtDb:
             query_snapshot = query.get()
         except Exception as e:
             self.logger.error(e)
-            return None, None
+            return None
 
         chulcheck_list = []
         for doc_ref in query_snapshot:
@@ -435,14 +467,14 @@ class BtDb:
         :param member:
         :return:
         """
-        transaction = self.db.transaction()
-        chulcheck_ref = self.db.collection(kCOL_ODINBOTAMCHULCHECK).document(doc_id)
 
         @firestore.transactional
         def update_in_transaction(tr, chulcheck_ref, m):
             try:
                 snapshot = chulcheck_ref.get(transaction=tr)
+                self.logger.debug(snapshot)
                 members = snapshot.get(kFLD_CC_MEMBERS)
+                self.logger.debug(members)
                 members = list(set(members))  # 중복제거
                 members.append(m)
                 members = sorted(members)
@@ -452,6 +484,8 @@ class BtDb:
                 return None
             return members
 
+        transaction = self.db.transaction()
+        chulcheck_ref = self.db.collection(kCOL_ODINBOTAMCHULCHECK).document(doc_id)
         member_list = update_in_transaction(transaction, chulcheck_ref, member)
         if member_list is None:
             return None, None

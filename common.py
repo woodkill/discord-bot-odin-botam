@@ -50,18 +50,22 @@ def to_guide_code_block(msg: str) -> str:
            f"```"
 
 
-def to_chulcheck_code_block(msg: str, members: str):
+def to_chulcheck_code_block(msg: str, member_list: list):
     """
 
     :param msg:
     :param members:
     :return:
     """
+    count = len(member_list)
+    str_members = ', '.join(member_list)
     return f"```{cPREFIX_ANSI}" \
            f"{cPREFIX_CODEBLOCK_OK}" \
            f"{msg}\n" \
+           f"{cPREFIX_CODEBLOCK_USAGE}" \
+           f"출석인원:{count}\n\n" \
            f"{cPOSTFIX_CODEBLOCK}" \
-           f"{members}" \
+           f"{str_members}" \
            f"```"
 
 
@@ -289,3 +293,11 @@ def get_separated_time_hhmm(timedelta_str: str) -> (int, int, int, int):
     m = 0 if g[1] is None else int(g[1])
     s = 0
     return d, h, m, s
+
+
+def extract_number_at_end_of_string(s):
+    match = re.search(r'\d+$', s)
+    if match:
+        return int(match.group())
+    else:
+        return None
