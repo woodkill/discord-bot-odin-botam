@@ -11,7 +11,7 @@ from discord.utils import format_dt
 from common import *
 from const_data import *
 from const_key import *
-from bossocr import *
+from gcpocr import get_ocr_boss_time_list_by_bytes
 import BtBot
 import BtDb
 
