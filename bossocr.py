@@ -300,8 +300,6 @@ def get_ocr_boss_time_list_by_bytes(image_bytes: bytes, bossname_list) -> (str, 
     :param bossname_list:
     :return:
     """
-
-
     image_np = np.frombuffer(image_bytes, np.uint8)
     img_np = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
 
