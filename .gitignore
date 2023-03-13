@@ -288,6 +288,9 @@ cython_debug/
 # firebase
 firebase.json
 
+# cloudvision
+cloudvision.json
+
 # log directory
 /logs
 

@@ -483,7 +483,7 @@ class Alarm(commands.Cog):
     @commands.command(name=cCMD_ALARM_TIMETABLE)
     async def time_table_image(self, ctx: commands.Context) -> None:
         """
-
+        시간표 이미지로 보탐 알람 자동등록
         :param ctx:
         :return:
         """
@@ -564,6 +564,11 @@ class Alarm(commands.Cog):
 
                 ocr_boss_name = boss_delta_time_pair[0]
                 str_ocr_boss_delta_time = boss_delta_time_pair[1]
+
+                # 출현중인 보스 처리
+                if str_ocr_boss_delta_time == u"출현중":
+                    message += f"{ocr_boss_name} : {str_ocr_boss_delta_time}\n"
+                    continue
 
                 # 인식된 남은 시간이 형식에 안맞으면 패쓰, 맞으면 OCR timedelta 객체 생성
                 if not is_korean_timedelta_format(str_ocr_boss_delta_time):

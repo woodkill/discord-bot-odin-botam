@@ -1,4 +1,5 @@
 from google.cloud import vision
+from google.oauth2.service_account import Credentials
 import logging
 import io
 import os
@@ -6,8 +7,7 @@ import numpy as np
 import math
 import difflib
 
-gcplogger = logging.getLogger('bot')
-
+credentials = Credentials.from_service_account_file('./cloudvision.json')
 
 def read_text(image_bytes):
     """
@@ -18,7 +18,7 @@ def read_text(image_bytes):
 
     #os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = gcp_credentials
 
-    client = vision.ImageAnnotatorClient()
+    client = vision.ImageAnnotatorClient(credentials=credentials)
     image = vision.Image(content=image_bytes)
     response = client.text_detection(image=image)
     texts = response.text_annotations
@@ -174,7 +174,7 @@ def bytes_similarity(list1, list2):
     return similarity
 
 
-def mapping(text_results):
+def mapping(text_results, bossname_list):
     """
     보스 이름과 매칭되는 남은 시간을 찾는 함수
     이미지상 보스 이름과 해당 보스의 남은 시간이 서로 가장 가깝게 위치함.
@@ -185,7 +185,7 @@ def mapping(text_results):
     """
     mapped_data = []
     for i in range(len(text_results)):
-        boss_name = find_boss_name(text_results[i][1])
+        boss_name = find_boss_name(text_results[i][1], bossname_list)
         if boss_name is None:
             continue
 
@@ -198,7 +198,7 @@ def mapping(text_results):
     return mapped_data
 
 
-def find_boss_name(origin_name):
+def find_boss_name(origin_name, bossname_list):
     """
     보스 이름을 정확한 이름으로 변환
     일반적이지 않은 이름이라 한두글자씩 틀리게 인식됨.
@@ -212,8 +212,8 @@ def find_boss_name(origin_name):
 
     max_similarity = 0
     max_index = -1
-    for i in range(len(boss_names)):
-        boss_name = list(boss_names[i])
+    for i in range(len(bossname_list)):
+        boss_name = list(bossname_list[i])
 
         similarity = bytes_similarity(name, boss_name)
         if similarity > max_similarity:
@@ -224,7 +224,7 @@ def find_boss_name(origin_name):
     #    print('origin: ', origin_name, ' target: ', boss_names[max_index], ' similarity: ', max_similarity)
 
     # 가장 유사한 이름과의 유사도가 0.55 미만이라면 무시 (예를 들면, '5시간 37분 남음' 같은 것들)
-    return boss_names[max_index] if max_similarity >= 0.55 else None
+    return bossname_list[max_index] if max_similarity >= 0.55 else None
 
 
 def get_ocr_boss_time_list_by_bytes(image_bytes: bytes, bossname_list) -> (str, list):
