@@ -10,7 +10,7 @@ import math
 import difflib
 
 credentials = Credentials.from_service_account_file('./cloudvision.json')
-clock_icon_template_image = cv2.imread('./images/template_clock.png', cv2.IMREAD_GRAYSCALE)
+clock_icon_template_image = cv2.imread('./Images/template_clock.png', cv2.IMREAD_GRAYSCALE)
 
 def remove_invalid_areas(image_bytes):
     """
