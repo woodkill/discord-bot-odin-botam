@@ -8,6 +8,7 @@ cPREFIX_ANSI = "ansi\n"
 cPREFIX_CODEBLOCK_OK = "\x1b[34;1m"
 cPREFIX_CODEBLOCK_ERROR = "\x1b[31;1m"
 cPREFIX_CODEBLOCK_USAGE = "\x1b[32;1m"
+cPREFIX_CODEBLOCK_LOTTERY_ITEM = "\x1b[32;1m"
 cPOSTFIX_CODEBLOCK = "\x1b[0m"
 
 
@@ -66,6 +67,50 @@ def to_chulcheck_code_block(msg: str, member_list: list):
            f"출석인원:{count}\n\n" \
            f"{cPOSTFIX_CODEBLOCK}" \
            f"{str_members}" \
+           f"```"
+
+
+def to_before_lottery_code_block(item_name: str, target_count: int, member_list: list):
+    """
+
+    :param item_name:
+    :param target_count:
+    :param member_list:
+    :return:
+    """
+    count = len(member_list)
+    str_members = ', '.join(member_list)
+    return f"```{cPREFIX_ANSI}" \
+           f"{cPREFIX_CODEBLOCK_LOTTERY_ITEM}" \
+           f"{item_name}\n\n" \
+           f"{cPREFIX_CODEBLOCK_OK}" \
+           f"뽑기({target_count}) 대상({len(member_list)})\n" \
+           f"{cPOSTFIX_CODEBLOCK}" \
+           f"{str_members}" \
+           f"```"
+
+
+def to_after_lottery_code_block(item_name: str, target_count: int, member_list: list, selected_member_list: list):
+    """
+
+    :param item_name:
+    :param target_count:
+    :param member_list:
+    :return:
+    """
+    count = len(member_list)
+    str_members = ', '.join(member_list)
+    return f"```{cPREFIX_ANSI}" \
+           f"{cPREFIX_CODEBLOCK_LOTTERY_ITEM}" \
+           f"{item_name}\n\n" \
+           f"{cPREFIX_CODEBLOCK_OK}" \
+           f"뽑기({target_count}) 대상({len(member_list)})\n" \
+           f"{cPOSTFIX_CODEBLOCK}" \
+           f"{str_members}\n\n" \
+           f"{cPREFIX_CODEBLOCK_OK}" \
+           f"당첨({len(selected_member_list)})\n" \
+           f"{cPOSTFIX_CODEBLOCK}" \
+           f"{', '.join(selected_member_list)}" \
            f"```"
 
 
@@ -301,3 +346,21 @@ def extract_number_at_end_of_string(s):
         return int(match.group())
     else:
         return None
+
+
+def parse_lottery_message(msg: str) -> (str, int, list):
+    pmsg = discord.utils.remove_markdown(msg)
+    pmsg = pmsg.removeprefix(cPREFIX_ANSI)
+    msg_list = pmsg.split()
+    item_name = msg_list[0].removeprefix(cPREFIX_CODEBLOCK_LOTTERY_ITEM)
+    target_count = int(msg_list[1].removeprefix(cPREFIX_CODEBLOCK_OK).removeprefix(u"뽑기(").removesuffix(u")"))
+    msg_list[3] = msg_list[3].removeprefix(cPOSTFIX_CODEBLOCK)
+    member_list = []
+    if len(msg_list[3]) > 0:
+        for i in range(3, len(msg_list)):
+            member_list.append(msg_list[i].removesuffix(','))
+    return item_name, target_count, member_list
+
+
+def is_selected_lottery_message(msg: str) -> bool:
+    return True if msg.find(u"당첨") != -1 else False

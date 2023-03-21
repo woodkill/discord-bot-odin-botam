@@ -41,7 +41,7 @@ class Alarm(commands.Cog):
         self.logger.info(f"Alarm Cog loaded.")
 
     @commands.command(name=cCMD_ALARM_TIMER)
-    async def alram_timers(self, ctx: commands.Context, *args) -> None:
+    async def alarm_timers(self, ctx: commands.Context, *args) -> None:
         """
         보스 출현 몇 분 전마다 알람을 받을 지 설정합니다.
         :param ctx:
@@ -694,7 +694,7 @@ class Alarm(commands.Cog):
             view_message = view_message[:-1]
 
         class Buttons(discord.ui.View):
-            def __init__(self, bot: BtBot, timeout=180):
+            def __init__(self, bot: BtBot, timeout=None):
                 self.bot = bot
                 self.logger = logging.getLogger('bot.alarm')
                 super().__init__(timeout=timeout)
@@ -807,7 +807,7 @@ class Alarm(commands.Cog):
             view_message = view_message[:-1]
 
         class Buttons(discord.ui.View):
-            def __init__(self, bot: BtBot, timeout=180):
+            def __init__(self, bot: BtBot, timeout=None):
                 self.bot = bot
                 self.logger = logging.getLogger('bot.alarm')
                 super().__init__(timeout=timeout)
@@ -970,11 +970,11 @@ class Alarm(commands.Cog):
 
             # 2. 성채 알람
             try:
-                guild_weekday_fixed_alram_dic = guild_alarm_dic[cBOSS_TYPE_WEEKDAY_FIXED]
+                guild_weekday_fixed_alarm_dic = guild_alarm_dic[cBOSS_TYPE_WEEKDAY_FIXED]
             except KeyError:
-                guild_weekday_fixed_alram_dic = {}
+                guild_weekday_fixed_alarm_dic = {}
 
-            for str_weekday_no, weekday_alarm_dic in guild_weekday_fixed_alram_dic.items():
+            for str_weekday_no, weekday_alarm_dic in guild_weekday_fixed_alarm_dic.items():
 
                 # 오늘이 성채 날짜가 아니면 통과
                 weekday_no = int(str_weekday_no)
