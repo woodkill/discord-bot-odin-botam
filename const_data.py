@@ -65,7 +65,7 @@ cUsageDic = {
     cCMD_LOTTERY_CHULCHECK_HISTORY: {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK_HISTORY}  ***보스명  N***", kCMD_EXPLANATION: f"해당 보스의 과거 N개 출첵들을 보여줌.(지정 안하면 5)"},
     cCMD_LOTTERY_CHULCHECK_DELETE:  {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK_DELETE}  ***출첵ID***", kCMD_EXPLANATION: f"지정한 출첵을 삭제(운영진만 사용가능)"},
     cCMD_LOTTERY_CHULCHECK_LOTTERY: {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK_LOTTERY}  ***출첵명  [템명  템명  ...]***", kCMD_EXPLANATION: f"최근 출첵 명단을 가져와서 뽑기를 해줌."},
-    cCMD_LOTTERY_LOTTERY:           {kCMD_USAGE: f"{cCMD_LOTTERY_LOTTERY}  ***[대상자, ...]***", kCMD_EXPLANATION: f"최근 출첵 명단을 가져와서 뽑기를 해줌."},
+    cCMD_LOTTERY_LOTTERY:           {kCMD_USAGE: f"{cCMD_LOTTERY_LOTTERY}  ***템명[N]  [대상자, ...]***", kCMD_EXPLANATION: f"최근 출첵 명단을 가져와서 뽑기를 해줌."},
 }
 
 '''
