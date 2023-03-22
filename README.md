@@ -17,7 +17,7 @@
 아래의 링크를 브라우저 주소창에 붙여넣어 봇을 당신의 서버에 초대합니다.
 
 ```
-
+https://discord.com/api/oauth2/authorize?client_id=1074530999947493438&permissions=8&scope=bot
 ```
 
 ## 사용방법
