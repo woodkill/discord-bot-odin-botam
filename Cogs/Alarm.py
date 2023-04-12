@@ -209,14 +209,16 @@ class Alarm(commands.Cog):
                 util_str = format_dt(interval_boss_time, style='R')
                 nd = humanize.naturalday(interval_boss_time, format='%m월%d일')
                 nt = str_interval_boss_time[11:]
-                for today_alarm_name in interval_boss_name_list:
+                for boss_name in interval_boss_name_list:
                     # 이건 이름 보여주는 방식
                     # interval_boss_embed.add_field(name=boss_name, value=str_interval_boss_time, inline=True)
                     # 이건 이름 안 보여주는 방식
                     # interval_boss_embed.add_field(name=boss_name, value=f"{nd} {nt}", inline=True)
                     # 이건 구어체 방식 마우스 위로 대면 날짜 나옴
-                    interval_boss_embed.add_field(name=today_alarm_name, value=f"{util_str}", inline=True) # 1111
-                    message += f"{today_alarm_name} : {nd} {nt}\n" # 2222
+                    interval_boss_embed.add_field(name=boss_name, value=f"{util_str}", inline=True) # 1111
+                    str_key, boss_dict = self.db.get_boss_item_by_name(boss_name)
+                    boss_chap_name = boss_dict[kCHAP_NAME]
+                    message += f"{nd} {nt} : {boss_name} -- {boss_chap_name}\n" # 2222
 
             embed_list.append(interval_boss_embed)
 
@@ -241,8 +243,7 @@ class Alarm(commands.Cog):
 
             # self.logger.debug(dict(sorted(guild_today_alarm_dic.items())))
 
-            for str_today_schedule_time, today_schedule_name_list in dict(
-                    sorted(guild_today_alarm_dic.items())).items():
+            for str_today_schedule_time, today_schedule_name_list in dict(sorted(guild_today_alarm_dic.items())).items():
                 today_alarm_datetime = datetime.datetime.strptime(str_today_schedule_time, cTIME_FORMAT_INTERVAL_TYPE)
                 util_str = format_dt(today_alarm_datetime, style='R')
                 nd = humanize.naturalday(today_alarm_datetime, format='%m월%d일')
@@ -254,7 +255,7 @@ class Alarm(commands.Cog):
                     # interval_boss_embed.add_field(name=today_alarm_name, value=f"{nd} {nt}", inline=True)
                     # 이건 구어체 방식 마우스 위로 대면 날짜 나옴
                     today_alarm_embed.add_field(name=today_alarm_name, value=f"{util_str}", inline=True)  # 1111
-                    message += f"{today_alarm_name} : {nd} {nt}\n"  # 2222
+                    message += f"{nd} {nt} : {today_alarm_name}\n"  # 2222
 
             embed_list.append(today_alarm_embed)
 
