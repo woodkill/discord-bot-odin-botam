@@ -1,5 +1,7 @@
 from google.cloud import vision
 from google.oauth2.service_account import Credentials
+import cv2
+import imutils
 import logging
 import io
 import os
@@ -8,18 +10,95 @@ import math
 import difflib
 
 credentials = Credentials.from_service_account_file('./cloudvision.json')
+clock_icon_template_image = cv2.imread('./Images/template_clock.png', cv2.IMREAD_GRAYSCALE)
 
-def read_text(image_bytes):
+def remove_invalid_areas(image_bytes):
+    """
+
+    :param image_bytes:
+    :return:
+    """
+    # 화일에서 읽는것 대신 디스코드 API가 주는 bytes객체 사용
+    # origin_image = cv2.imread(image_file)
+    image_np = np.frombuffer(image_bytes, np.uint8)
+    origin_image = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+
+    image = cv2.cvtColor(origin_image, cv2.COLOR_BGR2GRAY)
+
+    # 전역변수로 뺐음
+    # clock_icon_template_image = cv2.imread(template_file, cv2.IMREAD_GRAYSCALE)
+
+    for scale in np.linspace(0.4, 1.8, 13)[::-1]:
+        resized = imutils.resize(clock_icon_template_image, width=int(clock_icon_template_image.shape[1] * scale))
+        ratio = clock_icon_template_image.shape[1] / float(resized.shape[1])
+
+        result = cv2.matchTemplate(image, resized, cv2.TM_CCOEFF_NORMED)
+        threshold = 0.8
+        location = np.where(result >= threshold)
+        for pt in zip(*location[::-1]):
+            origin_image[pt[1]: pt[1] + resized.shape[0], pt[0]: pt[0] + resized.shape[1]] = (0, 0, 0)
+
+    # new_image_name = image_file.replace('.png', '_del.png')
+    # cv2.imwrite(new_image_name, origin_image)
+    # return new_image_name
+
+    retval, buffer = cv2.imencode('.png', origin_image)
+    new_image_bytes = buffer.tobytes()
+
+    return new_image_bytes
+
+
+# 디스코드가 준 bytes객체를 바로 쓸 때
+# def read_text(image_bytes):
+#     """
+#     google cloud platform vision을 이용해 이미지에서 한글 텍스트를 추출
+#     :param image_bytes:
+#     :return:
+#     """
+#
+#     client = vision.ImageAnnotatorClient(credentials=credentials)
+#     image = vision.Image(content=image_bytes)
+#     response = client.text_detection(image=image)
+#     texts = response.text_annotations
+#     if len(texts) < 1:
+#         return []
+#
+#     descriptions = texts[0].description.split("\n")
+#
+#     raw_results = []
+#     index = 1
+#
+#     special_chars = 'ⓒ㉡①|●②'
+#
+#     for description in descriptions:
+#         content = description.replace(" ", "")
+#         str_len = 0
+#         for i in range(index, len(texts)):
+#             str_len += len(texts[i].description)
+#             if str_len == len(content):
+#                 vertices = [[texts[index].bounding_poly.vertices[0].x, texts[index].bounding_poly.vertices[0].y], \
+#                             [texts[i].bounding_poly.vertices[1].x, texts[i].bounding_poly.vertices[1].y], \
+#                             [texts[i].bounding_poly.vertices[2].x, texts[i].bounding_poly.vertices[2].y], \
+#                             [texts[index].bounding_poly.vertices[3].x, texts[index].bounding_poly.vertices[3].y]]
+#
+#                 raw_results.append((vertices, description.translate({ord(i): None for i in special_chars}).strip(), 0.99))
+#                 index = i + 1
+#                 break
+#
+#     #print(raw_results)
+#
+#     return raw_results
+
+# remove_invalid_areas 함수로 전처리한 결과를 쓸때
+def read_text(cv_image):
     """
     google cloud platform vision을 이용해 이미지에서 한글 텍스트를 추출
     :param image_bytes:
     :return:
     """
 
-    #os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = gcp_credentials
-
     client = vision.ImageAnnotatorClient(credentials=credentials)
-    image = vision.Image(content=image_bytes)
+    image = vision.Image(content=cv_image)
     response = client.text_detection(image=image)
     texts = response.text_annotations
     if len(texts) < 1:
@@ -51,7 +130,6 @@ def read_text(image_bytes):
 
     return raw_results
 
-
 def find_current_time(text_results):
     """
     시간표 이미지 좌상단의 '현재 시간' 추출
@@ -63,7 +141,7 @@ def find_current_time(text_results):
             if len(text_results[i][1]) > 10:
                 return text_results[i][1].replace('현재 시간', '').strip()
             else:
-                nearest_index = get_nearest_box_index(text_results, i, 20, False)
+                nearest_index = get_nearest_box_index(text_results, i, 20, '')
                 if nearest_index < 0:
                     return None
                 return text_results[nearest_index][1]
@@ -71,13 +149,41 @@ def find_current_time(text_results):
     return None
 
 
-def get_nearest_box_index(text_results, base_index, vertical_weight, right_only):
+# def get_nearest_box_index(text_results, base_index, vertical_weight, right_only):
+#     """
+#     가장 가까운 글자 박스 검출
+#     :param text_results:
+#     :param base_index:
+#     :param vertical_weight:
+#     :param right_only:
+#     :return:
+#     """
+#     nearest_index = -1
+#     nearest_distance = 1000000
+#     for i in range(len(text_results)):
+#         if i == base_index:
+#             continue
+#
+#         if right_only and text_results[base_index][0][0] > text_results[i][0][0]:
+#             continue
+#
+#         distance = distance_boxes(text_results[base_index][0], text_results[i][0])
+#         if vertical_weight > 0:
+#             distance += vertical_distance_boxes(text_results[base_index][0], text_results[i][0]) * vertical_weight
+#
+#         if distance < nearest_distance:
+#             nearest_index = i
+#             nearest_distance = distance
+#
+#     return nearest_index
+
+def get_nearest_box_index(text_results, base_index, vertical_weight, direction):
     """
     가장 가까운 글자 박스 검출
     :param text_results:
     :param base_index:
     :param vertical_weight:
-    :param right_only:
+    :param direction:
     :return:
     """
     nearest_index = -1
@@ -86,8 +192,11 @@ def get_nearest_box_index(text_results, base_index, vertical_weight, right_only)
         if i == base_index:
             continue
 
-        if right_only and text_results[base_index][0][0] > text_results[i][0][0]:
-            continue
+        if direction:
+            if 'right' in direction and text_results[base_index][0][0][0] > text_results[i][0][0][0]:
+                continue
+            if 'bottom' in direction and text_results[base_index][0][0][1] > text_results[i][0][0][1]:
+                continue
 
         distance = distance_boxes(text_results[base_index][0], text_results[i][0])
         if vertical_weight > 0:
@@ -191,7 +300,7 @@ def mapping(text_results, bossname_list):
 
         #print('origin: ', text_results[i][1], ' mapped: ', boss_name)
 
-        nearest_index = get_nearest_box_index(text_results, i, 0, True)
+        nearest_index = get_nearest_box_index(text_results, i, 0, 'right,bottom')
         if nearest_index > -1:
             mapped_data.append([boss_name, text_results[nearest_index][1].replace("0 ", "", 1)])    # 남은 시간의 젤 앞 시계 이모티콘을 숫자 '0' 으로 인식하기도 함. 그 부분 제거
 
@@ -234,8 +343,12 @@ def get_ocr_boss_time_list_by_bytes(image_bytes: bytes, bossname_list) -> (str, 
     :param bossname_list:
     :return:
     """
+    # 시계 아이콘 제거 전처리
+    new_image_bytes = remove_invalid_areas(image_bytes)
+
     # OCR 수행
-    text_results = read_text(image_bytes)
+    # text_results = read_text(image_bytes)
+    text_results = read_text(new_image_bytes)
 
     #print(text_results)
 

@@ -1,5 +1,7 @@
 import logging
 import random
+import threading
+import asyncio
 
 from discord.ext import commands
 
@@ -15,8 +17,11 @@ from const_data import *
 KST = timezone('Asia/Seoul')
 UTC = utc
 
-# cEMOJI_CHULCHECK_ON = '⭕'
-# cEMOJI_CHULCHECK_OFF = '❌'
+cEMOJI_CHULCHECK_ON = '✋'
+cEMOJI_CHULCHECK_OFF = '❌'
+cEMOJI_LOTTERY_SELECT = '📤'  # '🎁''🎬'
+cEMOJI_LOTTERY_UP = '🔼'  # '🔺'
+cEMOJI_LOTTERY_DOWN = '🔽'  # '🔻'
 
 
 class Lottery(commands.Cog):
@@ -25,10 +30,152 @@ class Lottery(commands.Cog):
         self.bot: BtBot = bot
         self.db: BtDb.BtDb = bot.db
         self.logger = logging.getLogger('bot.lottery')
+        self.lock_dict = {}
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         self.logger.info(f"Lottery Cog loaded.")
+
+    @commands.command(name=cCMD_LOTTERY_LOTTERY)
+    async def lottery(self, ctx: commands.Context, *args) -> None:
+        """
+
+        :param ctx:
+        :param args:
+        :return:
+        """
+        self.logger.info(f"{cCMD_LOTTERY_LOTTERY} {args} by {ctx.message.author}")
+
+        # 먼저 길드등록이 되어 있는 지 검사
+        if not self.bot.is_guild_registerd(ctx.guild.id):
+            await send_guide_message(ctx, cMSG_REGISTER_GUILD_FIRST)
+            return
+
+        # 비정상 상태 체크
+        if ctx.guild.id not in self.bot.odin_guilds_dic:
+            await send_error_message(ctx, cMSG_NO_GUILD_INFO)
+            return
+
+        # 명령어 형식이 맞는지 검사
+        if len(args) < 1:  # 인자가 최소 1개 이상
+            await send_usage_embed(ctx, cCMD_LOTTERY_LOTTERY)
+            return
+
+        # 뽑기대상자 준비
+        member_list = []
+        for i in range(1, len(args)):
+            member = args[i].rstrip(',')
+            member_list.append(member)
+
+        # 템명
+        item_name = args[0].rstrip(',')
+        # 템명 뒤에 숫자가 붙어 있으면 템이 여러개라는 의미
+        r = extract_number_at_end_of_string(item_name)
+        item_name = item_name if r is None else item_name[:-len(str(r))]
+        target_count = 1 if r is None else r  # 몇명을 뽑는지
+
+        class Buttons(discord.ui.View):
+            def __init__(self, lottery_cog: Lottery, timeout=None):
+                self.cog = lottery_cog
+                self.bot = lottery_cog.bot
+                self.logger = logging.getLogger('bot.lottery')
+                super().__init__(timeout=timeout)
+
+            def __del__(self):
+                super().__del__()
+                del self.cog.lock_dict[self.id]
+
+            @discord.ui.button(label="", style=discord.ButtonStyle.gray, emoji=cEMOJI_CHULCHECK_ON)
+            async def add(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+                self.logger.info(f"buttons view id (add): {self.id}")
+                self.logger.info(self.cog.lock_dict)
+                with self.cog.lock_dict[self.id]:
+                    if is_selected_lottery_message(interaction.message.content):
+                        await interaction.response.defer()
+                    else:
+                        await asyncio.sleep(10)
+                        l_item_name, l_target_count, l_member_list = parse_lottery_message(interaction.message.content)
+                        nick = interaction.user.nick
+                        name = interaction.user.name
+                        click_member_name = nick if nick is not None else name  # 출석 버튼을 누른 자
+                        self.logger.debug(f"{cEMOJI_CHULCHECK_ON} : {click_member_name}")
+                        if click_member_name not in l_member_list:
+                            l_member_list.append(click_member_name)
+                        msg_add = to_before_lottery_code_block(l_item_name, l_target_count, l_member_list)
+                        await interaction.response.edit_message(content=msg_add)
+
+            @discord.ui.button(label="", style=discord.ButtonStyle.gray, emoji=cEMOJI_CHULCHECK_OFF)
+            async def remove(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+                self.logger.info(f"buttons view id (remove): {self.id}")
+                self.logger.info(self.cog.lock_dict)
+                with self.cog.lock_dict[self.id]:
+                    if is_selected_lottery_message(interaction.message.content):
+                        await interaction.response.defer()
+                    else:
+                        l_item_name, l_target_count, l_member_list = parse_lottery_message(interaction.message.content)
+                        nick = interaction.user.nick
+                        name = interaction.user.name
+                        click_member_name = nick if nick is not None else name  # 빼줘 버튼을 누른 자
+                        self.logger.debug(f"{cEMOJI_CHULCHECK_OFF} : {click_member_name}")
+                        if click_member_name in l_member_list:
+                            l_member_list.remove(click_member_name)
+                        msg_remove = to_before_lottery_code_block(l_item_name, l_target_count, l_member_list)
+                        await interaction.response.edit_message(content=msg_remove)
+
+            @discord.ui.button(label="", style=discord.ButtonStyle.gray, emoji=cEMOJI_LOTTERY_SELECT)
+            async def select(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+                self.logger.info(f"buttons view id (selelct): {self.id}")
+                self.logger.info(self.cog.lock_dict)
+                with self.cog.lock_dict[self.id]:
+                    if is_selected_lottery_message(interaction.message.content):
+                        await interaction.response.defer()
+                    else:
+                        l_item_name, l_target_count, l_member_list = parse_lottery_message(interaction.message.content)
+                        nick = interaction.user.nick
+                        name = interaction.user.name
+                        click_member_name = nick if nick is not None else name  # 뽑기 버튼을 누른 자
+                        self.logger.debug(f"{cEMOJI_LOTTERY_SELECT} : {click_member_name}")
+                        # if interaction.message.author.id == interaction.user.id:  # 뽑기를 올린 사람만 클릭 가능
+                        if l_target_count <= len(l_member_list):
+                            selected_member_list = random.sample(l_member_list, l_target_count)
+                        else:
+                            selected_member_list = random.choices(l_member_list, k=l_target_count)
+                        msg_select = to_after_lottery_code_block(l_item_name, l_target_count, l_member_list, selected_member_list)
+                        await interaction.response.edit_message(content=msg_select)
+
+            @discord.ui.button(label="", style=discord.ButtonStyle.gray, emoji=cEMOJI_LOTTERY_UP)
+            async def up(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+                self.logger.info(f"buttons view id (up): {self.id}")
+                self.logger.info(self.cog.lock_dict)
+                with self.cog.lock_dict[self.id]:
+                    if is_selected_lottery_message(interaction.message.content):
+                        await interaction.response.defer()
+                    else:
+                        l_item_name, l_target_count, l_member_list = parse_lottery_message(interaction.message.content)
+                        if l_target_count < len(l_member_list):
+                            l_target_count += 1
+                        msg_up = to_before_lottery_code_block(l_item_name, l_target_count, l_member_list)
+                        await interaction.response.edit_message(content=msg_up)
+
+            @discord.ui.button(label="", style=discord.ButtonStyle.gray, emoji=cEMOJI_LOTTERY_DOWN)
+            async def down(self, interaction: discord.Interaction, button: discord.ui.Button, ):
+                self.logger.info(f"buttons view id (down): {self.id}")
+                self.logger.info(self.cog.lock_dict)
+                with self.cog.lock_dict[self.id]:
+                    if is_selected_lottery_message(interaction.message.content):
+                        await interaction.response.defer()
+                    else:
+                        l_item_name, l_target_count, l_member_list = parse_lottery_message(interaction.message.content)
+                        if 1 < l_target_count:
+                            l_target_count -= 1
+                        msg_down = to_before_lottery_code_block(l_item_name, l_target_count, l_member_list)
+                        await interaction.response.edit_message(content=msg_down)
+
+        msg = to_before_lottery_code_block(item_name, target_count, member_list)
+        view = Buttons(self)
+        self.lock_dict[view.id] = threading.Lock()
+        self.logger.info(self.lock_dict)
+        await ctx.channel.send(msg, view=view)
 
     @commands.command(name=cCMD_LOTTERY_CHULCHECK)
     async def boss_chulcheck(self, ctx: commands.Context, *args) -> None:
@@ -103,7 +250,7 @@ class Lottery(commands.Cog):
         db = self.db
 
         class Buttons(discord.ui.View):
-            def __init__(self, bot: BtBot, timeout=180):
+            def __init__(self, bot: BtBot, timeout=None):
                 self.bot = bot
                 self.logger = logging.getLogger('bot.lottery')
                 super().__init__(timeout=timeout)
@@ -258,7 +405,7 @@ class Lottery(commands.Cog):
 
         await send_ok_message(ctx, f"출첵 {args[0]} 삭제하였습니다.")
 
-    @commands.command(name=cCMD_LOTTERY_LOTTERY)
+    @commands.command(name=cCMD_LOTTERY_CHULCHECK_LOTTERY)
     async def boss_chulcheck_lottery(self, ctx: commands.Context, *args) -> None:
         """
 
@@ -266,7 +413,7 @@ class Lottery(commands.Cog):
         :param args:
         :return:
         """
-        self.logger.info(f"{cCMD_LOTTERY_LOTTERY} {args} by {ctx.message.author}")
+        self.logger.info(f"{cCMD_LOTTERY_CHULCHECK_LOTTERY} {args} by {ctx.message.author}")
 
         # 먼저 길드등록이 되어 있는 지 검사
         if not self.bot.is_guild_registerd(ctx.guild.id):
@@ -280,7 +427,7 @@ class Lottery(commands.Cog):
 
         # 첫번째 인자 출첵명, 두번째 인자부터 뽑기할 템명. 없으면 그냥 당첨 표시만...
         if len(args) < 1:  # 인자가 최소 1개이어야 함
-            await send_usage_embed(ctx, cCMD_LOTTERY_LOTTERY)
+            await send_usage_embed(ctx, cCMD_LOTTERY_CHULCHECK_LOTTERY)
             return
 
         boss_name = args[0]  # 변수명은 boss_name이지만 출첵명이다.

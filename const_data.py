@@ -43,6 +43,7 @@ cCMD_ALARM_TODAY = u"오늘"
 cCMD_LOTTERY_CHULCHECK = u"출첵"
 cCMD_LOTTERY_CHULCHECK_HISTORY = u"출첵이력"
 cCMD_LOTTERY_CHULCHECK_DELETE = u"출첵삭제"
+cCMD_LOTTERY_CHULCHECK_LOTTERY = u"출첵뽑기"
 cCMD_LOTTERY_LOTTERY = u"뽑기"
 
 cCMD_PARAM_OFF = u"끄기"
@@ -63,7 +64,8 @@ cUsageDic = {
     cCMD_LOTTERY_CHULCHECK:         {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK}  ***보스명***", kCMD_EXPLANATION: f"보탐 참여자 출석체크. 지각생도 추가 가능"},
     cCMD_LOTTERY_CHULCHECK_HISTORY: {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK_HISTORY}  ***보스명  N***", kCMD_EXPLANATION: f"해당 보스의 과거 N개 출첵들을 보여줌.(지정 안하면 5)"},
     cCMD_LOTTERY_CHULCHECK_DELETE:  {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK_DELETE}  ***출첵ID***", kCMD_EXPLANATION: f"지정한 출첵을 삭제(운영진만 사용가능)"},
-    cCMD_LOTTERY_LOTTERY:           {kCMD_USAGE: f"{cCMD_LOTTERY_LOTTERY}  ***출첵명  [템명  템명  ...]***", kCMD_EXPLANATION: f"최근 출첵 명단을 가져와서 뽑기를 해줌."},
+    cCMD_LOTTERY_CHULCHECK_LOTTERY: {kCMD_USAGE: f"{cCMD_LOTTERY_CHULCHECK_LOTTERY}  ***출첵명  [템명  템명  ...]***", kCMD_EXPLANATION: f"최근 출첵 명단을 가져와서 뽑기를 해줌."},
+    cCMD_LOTTERY_LOTTERY:           {kCMD_USAGE: f"{cCMD_LOTTERY_LOTTERY}  ***템명[N]  [대상자, ...]***", kCMD_EXPLANATION: f"최근 출첵 명단을 가져와서 뽑기를 해줌."},
 }
 
 '''
